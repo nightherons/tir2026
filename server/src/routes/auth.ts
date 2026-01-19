@@ -100,4 +100,33 @@ router.post('/admin', async (req, res) => {
   }
 })
 
+// One-time setup - create first admin (only works if no admins exist)
+router.post('/setup', async (req, res) => {
+  try {
+    const existingAdmin = await prisma.admin.findFirst()
+    if (existingAdmin) {
+      return res.status(403).json({ success: false, error: 'Setup already completed' })
+    }
+
+    const { email, password } = req.body
+    if (!email || !password) {
+      return res.status(400).json({ success: false, error: 'Email and password required' })
+    }
+
+    const passwordHash = await bcrypt.hash(password, 10)
+    const admin = await prisma.admin.create({
+      data: { email, passwordHash, role: 'admin' },
+    })
+
+    res.json({
+      success: true,
+      message: 'Admin created successfully',
+      data: { email: admin.email },
+    })
+  } catch (error) {
+    console.error('Setup error:', error)
+    res.status(500).json({ success: false, error: 'Setup failed' })
+  }
+})
+
 export default router
