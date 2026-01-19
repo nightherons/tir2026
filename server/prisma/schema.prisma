@@ -1,0 +1,85 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Team {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  city        String   // Houston or Dallas
+  color       String   @default("#3b82f6") // Hex color code
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  runners     Runner[]
+}
+
+model Runner {
+  id            String      @id @default(cuid())
+  name          String
+  pin           String      @unique
+  teamId        String
+  team          Team        @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  vanNumber     Int         // 1 or 2
+  runOrder      Int         // 1-6 within van
+  projectedPace Int         // seconds per mile
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+  legResults    LegResult[]
+
+  @@unique([teamId, vanNumber, runOrder])
+}
+
+model Leg {
+  id         String      @id @default(cuid())
+  legNumber  Int         @unique
+  distance   Float       // miles
+  startPoint String?
+  endPoint   String?
+  elevation  Int?        // feet gain
+  difficulty String?     // easy, moderate, hard
+  startLat   Float?      // latitude of leg start
+  startLng   Float?      // longitude of leg start
+  endLat     Float?      // latitude of exchange point (leg end)
+  endLng     Float?      // longitude of exchange point (leg end)
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+  results    LegResult[]
+}
+
+model LegResult {
+  id        String    @id @default(cuid())
+  legId     String
+  leg       Leg       @relation(fields: [legId], references: [id], onDelete: Cascade)
+  runnerId  String
+  runner    Runner    @relation(fields: [runnerId], references: [id], onDelete: Cascade)
+  clockTime Int       // total seconds for leg
+  startTime DateTime?
+  endTime   DateTime?
+  kills     Int       @default(0)
+  enteredBy String    // runner, captain, admin
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@unique([legId, runnerId])
+}
+
+model Admin {
+  id           String  @id @default(cuid())
+  email        String  @unique
+  passwordHash String
+  role         String  // admin or captain
+  teamId       String? // for captains
+  vanNumber    Int?    // for captains
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model RaceConfig {
+  id    String @id @default(cuid())
+  key   String @unique
+  value String
+}

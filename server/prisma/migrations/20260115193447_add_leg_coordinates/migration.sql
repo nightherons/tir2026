@@ -1,0 +1,5 @@
+-- AlterTable
+ALTER TABLE "Leg" ADD COLUMN "endLat" REAL;
+ALTER TABLE "Leg" ADD COLUMN "endLng" REAL;
+ALTER TABLE "Leg" ADD COLUMN "startLat" REAL;
+ALTER TABLE "Leg" ADD COLUMN "startLng" REAL;
