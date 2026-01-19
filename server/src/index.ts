@@ -17,9 +17,15 @@ dotenv.config()
 
 const app = express()
 const httpServer = createServer(app)
+// Allow multiple origins for CORS (with and without www)
+const allowedOrigins = [
+  process.env.FRONTEND_URL || 'http://localhost:5173',
+  process.env.FRONTEND_URL?.replace('https://', 'https://www.') || 'http://localhost:5173',
+]
+
 const io = new Server(httpServer, {
   cors: {
-    origin: process.env.FRONTEND_URL || 'http://localhost:5173',
+    origin: allowedOrigins,
     methods: ['GET', 'POST'],
   },
 })
@@ -27,7 +33,7 @@ const io = new Server(httpServer, {
 // Middleware
 app.use(helmet())
 app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:5173',
+  origin: allowedOrigins,
   credentials: true,
 }))
 app.use(express.json())
