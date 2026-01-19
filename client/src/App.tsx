@@ -9,7 +9,6 @@ import Dashboard from './pages/Dashboard'
 import RunnerEntry from './pages/RunnerEntry'
 import CaptainEntry from './pages/CaptainEntry'
 import AdminPanel from './pages/AdminPanel'
-import Login from './pages/Login'
 
 // Layouts
 import MainLayout from './components/shared/MainLayout'
