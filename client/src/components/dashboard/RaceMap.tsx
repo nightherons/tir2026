@@ -156,16 +156,22 @@ function applyVanOffsets(positions: VanPosition[]): VanPosition[] {
 interface RaceMapProps {
   legs: Leg[]
   standings: TeamStanding[]
+  raceStartTime?: string
+  routePaths?: Record<string, [number, number][]>
 }
 
 // Component to fit map bounds on initial load
-function FitBounds({ legs, selectedLeg }: { legs: Leg[], selectedLeg: Leg | null }) {
+function FitBounds({ legs, selectedLeg, routePaths }: { legs: Leg[], selectedLeg: Leg | null, routePaths?: Record<string, [number, number][]> }) {
   const map = useMap()
 
   useEffect(() => {
     if (selectedLeg) {
-      // Zoom to selected leg
-      if (selectedLeg.startLat && selectedLeg.startLng && selectedLeg.endLat && selectedLeg.endLng) {
+      // Zoom to selected leg using detailed path if available
+      const path = routePaths?.[String(selectedLeg.legNumber)]
+      if (path && path.length >= 2) {
+        const bounds = L.latLngBounds(path.map(p => [p[0], p[1]] as [number, number]))
+        map.fitBounds(bounds, { padding: [50, 50], maxZoom: 14 })
+      } else if (selectedLeg.startLat && selectedLeg.startLng && selectedLeg.endLat && selectedLeg.endLng) {
         const bounds = L.latLngBounds([
           [selectedLeg.startLat, selectedLeg.startLng],
           [selectedLeg.endLat, selectedLeg.endLng],
@@ -183,7 +189,7 @@ function FitBounds({ legs, selectedLeg }: { legs: Leg[], selectedLeg: Leg | null
         map.fitBounds(bounds, { padding: [20, 20] })
       }
     }
-  }, [legs, map, selectedLeg])
+  }, [legs, map, selectedLeg, routePaths])
 
   return null
 }
@@ -197,59 +203,181 @@ function getDifficultyColor(difficulty?: string): string {
   }
 }
 
-export default function RaceMap({ legs, standings }: RaceMapProps) {
+// Haversine distance between two [lat, lng] points in meters
+function haversineDistance(a: [number, number], b: [number, number]): number {
+  const R = 6371000
+  const toRad = (d: number) => (d * Math.PI) / 180
+  const dLat = toRad(b[0] - a[0])
+  const dLng = toRad(b[1] - a[1])
+  const sinLat = Math.sin(dLat / 2)
+  const sinLng = Math.sin(dLng / 2)
+  const h = sinLat * sinLat + Math.cos(toRad(a[0])) * Math.cos(toRad(b[0])) * sinLng * sinLng
+  return 2 * R * Math.asin(Math.sqrt(h))
+}
+
+// Given a detailed path and a progress [0,1], interpolate position along the path
+function interpolateAlongPath(path: [number, number][], progress: number): [number, number] {
+  if (path.length === 0) return [0, 0]
+  if (path.length === 1 || progress <= 0) return path[0]
+  if (progress >= 1) return path[path.length - 1]
+
+  // Compute cumulative distances
+  const cumDist: number[] = [0]
+  for (let i = 1; i < path.length; i++) {
+    cumDist.push(cumDist[i - 1] + haversineDistance(path[i - 1], path[i]))
+  }
+  const totalDist = cumDist[cumDist.length - 1]
+  const targetDist = progress * totalDist
+
+  // Find the segment
+  for (let i = 1; i < cumDist.length; i++) {
+    if (cumDist[i] >= targetDist) {
+      const segLen = cumDist[i] - cumDist[i - 1]
+      const t = segLen > 0 ? (targetDist - cumDist[i - 1]) / segLen : 0
+      return [
+        path[i - 1][0] + (path[i][0] - path[i - 1][0]) * t,
+        path[i - 1][1] + (path[i][1] - path[i - 1][1]) * t,
+      ]
+    }
+  }
+  return path[path.length - 1]
+}
+
+export default function RaceMap({ legs, standings, raceStartTime, routePaths }: RaceMapProps) {
   const [selectedLeg, setSelectedLeg] = useState<Leg | null>(null)
   const [sidebarOpen, setSidebarOpen] = useState(true)
+  const [tick, setTick] = useState(0)
+
+  // Tick every 5 seconds to update van positions
+  useEffect(() => {
+    const interval = setInterval(() => setTick(t => t + 1), 5000)
+    return () => clearInterval(interval)
+  }, [])
 
   // Sort legs for sidebar
   const sortedLegs = useMemo(() => {
     return [...legs].sort((a, b) => a.legNumber - b.legNumber)
   }, [legs])
 
-  // Build route polyline from leg coordinates
+  // Build route polyline from detailed paths (or fall back to straight lines)
   const routePoints = useMemo(() => {
     const points: [number, number][] = []
-    const sortedLegs = [...legs].sort((a, b) => a.legNumber - b.legNumber)
+    const sorted = [...legs].sort((a, b) => a.legNumber - b.legNumber)
 
-    for (const leg of sortedLegs) {
-      if (leg.startLat && leg.startLng) {
-        points.push([leg.startLat, leg.startLng])
-      }
-      if (leg.endLat && leg.endLng) {
-        points.push([leg.endLat, leg.endLng])
+    for (const leg of sorted) {
+      const path = routePaths?.[String(leg.legNumber)]
+      if (path && path.length > 0) {
+        // Skip the first point if it duplicates the last point already added
+        const startIdx = points.length > 0 &&
+          points[points.length - 1][0] === path[0][0] &&
+          points[points.length - 1][1] === path[0][1]
+          ? 1 : 0
+        for (let i = startIdx; i < path.length; i++) {
+          points.push(path[i])
+        }
+      } else {
+        // Fallback to straight line
+        if (leg.startLat && leg.startLng) {
+          points.push([leg.startLat, leg.startLng])
+        }
+        if (leg.endLat && leg.endLng) {
+          points.push([leg.endLat, leg.endLng])
+        }
       }
     }
 
     return points
-  }, [legs])
+  }, [legs, routePaths])
 
-  // Calculate van positions based on standings
+  // Calculate van positions based on standings, with time-based interpolation
   const vanPositions = useMemo(() => {
     const positions: VanPosition[] = []
+    const sortedLegs = [...legs].sort((a, b) => a.legNumber - b.legNumber)
 
     for (const standing of standings) {
-      const currentLeg = standing.currentLeg || 1
       const teamName = standing.team.name
       const teamColor = standing.team.color || '#3b82f6'
 
-      // Determine which van is active based on current leg
-      // Van 1: legs 1-6, 13-18, 25-30
-      // Van 2: legs 7-12, 19-24, 31-36
+      // Try time-based interpolation if we have legTimings and raceStartTime
+      let interpolatedLegNum: number | null = null
+      let interpolatedLat: number | null = null
+      let interpolatedLng: number | null = null
+
+      if (raceStartTime && standing.legTimings && standing.legTimings.length === 36) {
+        const raceStart = new Date(raceStartTime).getTime()
+        const elapsed = (Date.now() - raceStart) / 1000
+
+        if (elapsed > 0) {
+          let cumulative = 0
+          for (let i = 0; i < 36; i++) {
+            const legSeconds = standing.legTimings[i]
+            if (cumulative + legSeconds > elapsed) {
+              // Van is on leg i+1 (1-indexed)
+              const progress = Math.min((elapsed - cumulative) / legSeconds, 0.95)
+              const legNum = i + 1
+              const leg = sortedLegs.find(l => l.legNumber === legNum)
+              const path = routePaths?.[String(legNum)]
+
+              if (path && path.length >= 2) {
+                // Interpolate along the detailed road path
+                const pos = interpolateAlongPath(path, progress)
+                interpolatedLegNum = legNum
+                interpolatedLat = pos[0]
+                interpolatedLng = pos[1]
+              } else if (leg && leg.startLat && leg.startLng && leg.endLat && leg.endLng) {
+                // Fallback to straight-line lerp
+                interpolatedLegNum = legNum
+                interpolatedLat = leg.startLat + (leg.endLat - leg.startLat) * progress
+                interpolatedLng = leg.startLng + (leg.endLng - leg.startLng) * progress
+              }
+              break
+            }
+            cumulative += legSeconds
+          }
+
+          // If elapsed exceeds all 36 legs, van is at finish
+          if (interpolatedLegNum === null) {
+            const lastLeg = sortedLegs.find(l => l.legNumber === 36)
+            if (lastLeg && lastLeg.endLat && lastLeg.endLng) {
+              interpolatedLegNum = 36
+              interpolatedLat = lastLeg.endLat
+              interpolatedLng = lastLeg.endLng
+            }
+          }
+        }
+      }
+
+      // Use interpolated position or fall back to static start-of-leg
+      const currentLeg = interpolatedLegNum || standing.currentLeg || 1
+
+      // Determine active van based on which leg the runner is on
       const legIndex = ((currentLeg - 1) % 12)
       const activeVan = legIndex < 6 ? 1 : 2
 
-      // Find the exchange point for the current leg
-      const leg = legs.find(l => l.legNumber === currentLeg)
-      if (leg && leg.startLat && leg.startLng) {
+      if (interpolatedLat !== null && interpolatedLng !== null) {
         positions.push({
           teamName,
           teamColor,
           vanNumber: activeVan,
-          lat: leg.startLat,
-          lng: leg.startLng,
+          lat: interpolatedLat,
+          lng: interpolatedLng,
           currentLeg,
           totalTime: formatTime(standing.totalTime),
         })
+      } else {
+        // Fallback: place van at start of current leg
+        const leg = legs.find(l => l.legNumber === currentLeg)
+        if (leg && leg.startLat && leg.startLng) {
+          positions.push({
+            teamName,
+            teamColor,
+            vanNumber: activeVan,
+            lat: leg.startLat,
+            lng: leg.startLng,
+            currentLeg,
+            totalTime: formatTime(standing.totalTime),
+          })
+        }
       }
 
       // Also show the other van at their last completed exchange
@@ -257,15 +385,13 @@ export default function RaceMap({ legs, standings }: RaceMapProps) {
       let otherVanLeg: number
 
       if (activeVan === 1) {
-        // Van 2 last ran: find the most recent van 2 leg completed
-        if (currentLeg <= 6) otherVanLeg = 0 // Van 2 hasn't started
+        if (currentLeg <= 6) otherVanLeg = 0
         else if (currentLeg <= 12) otherVanLeg = currentLeg - 6
         else if (currentLeg <= 18) otherVanLeg = 12
         else if (currentLeg <= 24) otherVanLeg = currentLeg - 6
         else if (currentLeg <= 30) otherVanLeg = 24
         else otherVanLeg = currentLeg - 6
       } else {
-        // Van 1 last ran: find the most recent van 1 leg completed
         if (currentLeg <= 6) otherVanLeg = currentLeg
         else if (currentLeg <= 12) otherVanLeg = 6
         else if (currentLeg <= 18) otherVanLeg = currentLeg - 6
@@ -292,7 +418,7 @@ export default function RaceMap({ legs, standings }: RaceMapProps) {
 
     // Apply offsets to spread out vans at the same position
     return applyVanOffsets(positions)
-  }, [standings, legs])
+  }, [standings, legs, raceStartTime, tick, routePaths])
 
   // Get exchange markers (end points of each leg)
   const exchangeMarkers = useMemo(() => {
@@ -410,7 +536,7 @@ export default function RaceMap({ legs, standings }: RaceMapProps) {
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           />
 
-          <FitBounds legs={legs} selectedLeg={selectedLeg} />
+          <FitBounds legs={legs} selectedLeg={selectedLeg} routePaths={routePaths} />
 
           {/* Route polyline */}
           <Polyline
@@ -421,17 +547,33 @@ export default function RaceMap({ legs, standings }: RaceMapProps) {
           />
 
           {/* Highlight selected leg */}
-          {selectedLeg && selectedLeg.startLat && selectedLeg.startLng && selectedLeg.endLat && selectedLeg.endLng && (
-            <Polyline
-              positions={[
-                [selectedLeg.startLat, selectedLeg.startLng],
-                [selectedLeg.endLat, selectedLeg.endLng],
-              ]}
-              color="#ef4444"
-              weight={5}
-              opacity={1}
-            />
-          )}
+          {selectedLeg && (() => {
+            const path = routePaths?.[String(selectedLeg.legNumber)]
+            if (path && path.length >= 2) {
+              return (
+                <Polyline
+                  positions={path}
+                  color="#ef4444"
+                  weight={5}
+                  opacity={1}
+                />
+              )
+            }
+            if (selectedLeg.startLat && selectedLeg.startLng && selectedLeg.endLat && selectedLeg.endLng) {
+              return (
+                <Polyline
+                  positions={[
+                    [selectedLeg.startLat, selectedLeg.startLng],
+                    [selectedLeg.endLat, selectedLeg.endLng],
+                  ]}
+                  color="#ef4444"
+                  weight={5}
+                  opacity={1}
+                />
+              )
+            }
+            return null
+          })()}
 
           {/* Start marker */}
           {startPoint && (

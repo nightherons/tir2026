@@ -7,6 +7,17 @@ const prisma = new PrismaClient()
 // Get all dashboard data
 router.get('/', async (req, res) => {
   try {
+    // Fetch all 36 legs (for distances) and raceDate config once
+    const [allLegs, raceConfig] = await Promise.all([
+      prisma.leg.findMany({ orderBy: { legNumber: 'asc' } }),
+      prisma.raceConfig.findUnique({ where: { key: 'raceDate' } }),
+    ])
+
+    const raceStartTime = raceConfig?.value || null
+
+    // Build a map of leg number -> leg for quick lookups
+    const legsByNumber = new Map(allLegs.map(l => [l.legNumber, l]))
+
     const teams = await prisma.team.findMany({
       include: {
         runners: {
@@ -52,6 +63,35 @@ router.get('/', async (req, res) => {
       // Calculate total kills
       const totalKills = allResults.reduce((sum, r) => sum + r.kills, 0)
 
+      // Build legTimings: array of 36 numbers (seconds per leg)
+      // Index into results by leg number for this team
+      const resultsByLeg = new Map<number, number>()
+      for (const result of allResults) {
+        if (result.leg && result.clockTime) {
+          resultsByLeg.set(result.leg.legNumber, result.clockTime)
+        }
+      }
+
+      const DEFAULT_PACE = 600 // 10 min/mile fallback
+      const legTimings: number[] = []
+      for (let legNum = 1; legNum <= 36; legNum++) {
+        const actualTime = resultsByLeg.get(legNum)
+        if (actualTime) {
+          legTimings.push(actualTime)
+        } else {
+          // Find assigned runner for this leg
+          const runnerOrder = ((legNum - 1) % 6) + 1
+          const van = legNum <= 6 || (legNum > 12 && legNum <= 18) || (legNum > 24 && legNum <= 30) ? 1 : 2
+          const runner = team.runners.find(
+            (r) => r.vanNumber === van && r.runOrder === runnerOrder
+          )
+          const pace = runner?.projectedPace || DEFAULT_PACE
+          const leg = legsByNumber.get(legNum)
+          const distance = leg?.distance || 5
+          legTimings.push(pace * distance)
+        }
+      }
+
       return {
         team: {
           id: team.id,
@@ -69,6 +109,7 @@ router.get('/', async (req, res) => {
         paceVsProjected: 0, // Will calculate properly when we have more data
         totalKills,
         rank: 0, // Will set after sorting
+        legTimings,
       }
     })
 
@@ -99,6 +140,7 @@ router.get('/', async (req, res) => {
       success: true,
       data: {
         standings,
+        raceStartTime,
         lastUpdate: new Date().toISOString(),
       },
     })

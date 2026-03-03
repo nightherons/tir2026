@@ -15,6 +15,7 @@ import LegWinners from '../components/dashboard/LegWinners'
 export default function Dashboard() {
   const { onLeaderboardUpdate, onTimeEntered } = useSocketStore()
   const [standings, setStandings] = useState<TeamStanding[]>([])
+  const [raceStartTime, setRaceStartTime] = useState<string | undefined>()
 
   const { data, isLoading, error } = useQuery({
     queryKey: ['dashboard'],
@@ -32,10 +33,23 @@ export default function Dashboard() {
     staleTime: 5 * 60 * 1000, // Cache for 5 minutes
   })
 
-  // Initialize standings from query
+  // Fetch detailed route paths from static KML-derived JSON
+  const { data: routePaths } = useQuery<Record<string, [number, number][]>>({
+    queryKey: ['routePaths'],
+    queryFn: async () => {
+      const res = await fetch('/route.json')
+      return res.json()
+    },
+    staleTime: Infinity,
+  })
+
+  // Initialize standings and raceStartTime from query
   useEffect(() => {
     if (data?.data?.data?.standings) {
       setStandings(data.data.data.standings)
+    }
+    if (data?.data?.data?.raceStartTime) {
+      setRaceStartTime(data.data.data.raceStartTime)
     }
   }, [data])
 
@@ -101,7 +115,7 @@ export default function Dashboard() {
       {legsData && legsData.length > 0 && (
         <div>
           <h3 className="text-lg font-semibold mb-3">Live Race Map</h3>
-          <RaceMap legs={legsData} standings={standings} />
+          <RaceMap legs={legsData} standings={standings} raceStartTime={raceStartTime} routePaths={routePaths} />
         </div>
       )}
 
