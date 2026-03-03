@@ -73,14 +73,9 @@ httpServer.listen(PORT, async () => {
   // Auto-seed legs if the table is empty
   try {
     const prisma = new PrismaClient()
-    const legCount = await prisma.leg.count()
-    if (legCount === 0) {
-      console.log('No legs found, auto-seeding...')
-      await seedLegs(prisma)
-      console.log('Auto-seed complete')
-    } else {
-      console.log(`${legCount} legs already in database`)
-    }
+    console.log('Syncing leg data...')
+    await seedLegs(prisma)
+    console.log('Leg data synced')
     await prisma.$disconnect()
   } catch (err) {
     console.error('Auto-seed error:', err)

@@ -17,7 +17,7 @@ const legData = [
   { distance: 6.38, start: [29.67986, -96.9061], end: [29.65751, -96.82041], startPoint: 'Schulenburg', endPoint: "Molly's Corrale" },
   { distance: 5.33, start: [29.65751, -96.82041], end: [29.70267, -96.77938], startPoint: "Molly's Corrale", endPoint: 'Weimar' },
   { distance: 6.35, start: [29.70267, -96.77938], end: [29.69578, -96.69802], startPoint: 'Weimar', endPoint: '209 & 217' },
-  { distance: 6.78, start: [29.69578, -97.69802], end: [29.70202, -96.58678], startPoint: '209 & 217', endPoint: 'Train Switching Depot' },
+  { distance: 6.78, start: [29.69578, -96.69802], end: [29.70202, -96.58678], startPoint: '209 & 217', endPoint: 'Train Switching Depot' },
   { distance: 4.42, start: [29.70202, -96.58678], end: [29.68867, -96.53743], startPoint: 'Train Switching Depot', endPoint: 'Columbus' },
   { distance: 3.70, start: [29.68867, -96.53743], end: [29.64193, -96.51491], startPoint: 'Columbus', endPoint: 'CR102' },
   { distance: 6.82, start: [29.64193, -96.51491], end: [29.57088, -96.45564], startPoint: 'CR102', endPoint: 'Apocalypse' },
