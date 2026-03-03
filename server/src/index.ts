@@ -4,6 +4,7 @@ import helmet from 'helmet'
 import { createServer } from 'http'
 import { Server } from 'socket.io'
 import dotenv from 'dotenv'
+import { PrismaClient } from '@prisma/client'
 
 import authRoutes from './routes/auth.js'
 import dashboardRoutes from './routes/dashboard.js'
@@ -12,6 +13,7 @@ import runnerRoutes from './routes/runner.js'
 import captainRoutes from './routes/captain.js'
 import adminRoutes from './routes/admin.js'
 import { setupSocketHandlers } from './socket/handlers.js'
+import { seedLegs } from './utils/seedLegs.js'
 
 dotenv.config()
 
@@ -65,8 +67,24 @@ app.use((err: Error, req: express.Request, res: express.Response, next: express.
 
 const PORT = process.env.PORT || 3001
 
-httpServer.listen(PORT, () => {
+httpServer.listen(PORT, async () => {
   console.log(`Server running on port ${PORT}`)
+
+  // Auto-seed legs if the table is empty
+  try {
+    const prisma = new PrismaClient()
+    const legCount = await prisma.leg.count()
+    if (legCount === 0) {
+      console.log('No legs found, auto-seeding...')
+      await seedLegs(prisma)
+      console.log('Auto-seed complete')
+    } else {
+      console.log(`${legCount} legs already in database`)
+    }
+    await prisma.$disconnect()
+  } catch (err) {
+    console.error('Auto-seed error:', err)
+  }
 })
 
 export { io }
