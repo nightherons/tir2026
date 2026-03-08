@@ -49,7 +49,7 @@ export default function Dashboard() {
     if (data?.data?.data?.standings) {
       setStandings(data.data.data.standings)
     }
-    if (data?.data?.data?.totalMiles) {
+    if (data?.data?.data?.totalMiles != null) {
       setTotalMiles(data.data.data.totalMiles)
     }
     if (data?.data?.data?.raceStartTime) {

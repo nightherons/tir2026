@@ -148,14 +148,15 @@ router.get('/', async (req, res) => {
 
       // Calculate miles completed based on race position
       let milesCompleted = 0
-      const completedFullLegs = Math.floor(racePosition)
+      const positionForMiles = Math.max(racePosition, completedLegs)
+      const completedFullLegs = Math.floor(positionForMiles)
       for (let i = 0; i < completedFullLegs && i < 36; i++) {
         const leg = legsByNumber.get(i + 1)
         milesCompleted += leg?.distance || 5
       }
       // Add partial distance for leg in progress
-      const partialProgress = racePosition - completedFullLegs
-      if (completedFullLegs < 36) {
+      const partialProgress = positionForMiles - completedFullLegs
+      if (completedFullLegs < 36 && partialProgress > 0) {
         const currentLegData = legsByNumber.get(completedFullLegs + 1)
         milesCompleted += (currentLegData?.distance || 5) * partialProgress
       }
