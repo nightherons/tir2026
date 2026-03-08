@@ -21,6 +21,7 @@ import LegsManager from '../components/admin/LegsManager'
 import TimeEntryAdmin from '../components/admin/TimeEntryAdmin'
 import ImportExport from '../components/admin/ImportExport'
 import RaceConfig from '../components/admin/RaceConfig'
+import DebugInfo from '../components/admin/DebugInfo'
 
 const navItems = [
   { path: '/admin', label: 'Teams', icon: Users, end: true },
@@ -29,6 +30,7 @@ const navItems = [
   { path: '/admin/entry', label: 'Time Entry', icon: Timer },
   { path: '/admin/import', label: 'Import/Export', icon: Upload },
   { path: '/admin/config', label: 'Settings', icon: Settings },
+  { path: '/admin/debug', label: 'Debug', icon: Settings },
 ]
 
 export default function AdminPanel() {
@@ -142,6 +144,7 @@ export default function AdminPanel() {
           <Route path="entry" element={<TimeEntryAdmin />} />
           <Route path="import" element={<ImportExport />} />
           <Route path="config" element={<RaceConfig />} />
+          <Route path="debug" element={<DebugInfo />} />
         </Routes>
       </main>
     </div>
