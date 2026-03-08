@@ -95,6 +95,7 @@ export default function PaceChart({ standings, legs }: PaceChartProps) {
               <XAxis
                 dataKey="leg"
                 tick={{ fontSize: 12 }}
+                label={{ value: 'Leg', position: 'insideBottom', offset: -5 }}
               />
               <YAxis
                 label={{

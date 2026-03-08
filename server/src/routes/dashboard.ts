@@ -430,4 +430,106 @@ router.get('/leaderboard', async (req, res) => {
   }
 })
 
+// Debug endpoint - shows runner paces, leg assignments, and projected finish breakdown
+router.get('/debug', async (req, res) => {
+  try {
+    const [teams, allLegs, raceConfig] = await Promise.all([
+      prisma.team.findMany({
+        include: {
+          runners: {
+            orderBy: [{ vanNumber: 'asc' }, { runOrder: 'asc' }],
+            include: { legResults: { include: { leg: true } } },
+          },
+        },
+      }),
+      prisma.leg.findMany({ orderBy: { legNumber: 'asc' } }),
+      prisma.raceConfig.findUnique({ where: { key: 'raceDate' } }),
+    ])
+
+    const legsByNumber = new Map(allLegs.map(l => [l.legNumber, l]))
+    const raceStartTime = raceConfig?.value || null
+
+    const debug = teams.map(team => {
+      const runnerByLeg = new Map<number, typeof team.runners[0]>()
+      for (const runner of team.runners) {
+        for (const legNum of getRunnerLegNumbers(runner)) {
+          runnerByLeg.set(legNum, runner)
+        }
+      }
+
+      const resultsByLeg = new Map<number, number>()
+      for (const runner of team.runners) {
+        for (const result of runner.legResults) {
+          if (result.leg && result.clockTime) {
+            resultsByLeg.set(result.leg.legNumber, result.clockTime)
+          }
+        }
+      }
+
+      const legBreakdown = []
+      let totalSeconds = 0
+      for (let legNum = 1; legNum <= 36; legNum++) {
+        const leg = legsByNumber.get(legNum)
+        const distance = leg?.distance || 5
+        const runner = runnerByLeg.get(legNum)
+        const actualTime = resultsByLeg.get(legNum)
+        const pace = runner?.projectedPace || 600
+        const legTime = actualTime || pace * distance
+        totalSeconds += legTime
+
+        const paceMin = Math.floor(pace / 60)
+        const paceSec = Math.round(pace % 60)
+
+        legBreakdown.push({
+          leg: legNum,
+          distance,
+          runner: runner?.name || 'UNASSIGNED',
+          pacePerMile: `${paceMin}:${paceSec.toString().padStart(2, '0')}`,
+          paceSeconds: pace,
+          legTimeSeconds: Math.round(legTime),
+          legTimeFormatted: `${Math.floor(legTime / 60)}:${Math.round(legTime % 60).toString().padStart(2, '0')}`,
+          source: actualTime ? 'actual' : 'projected',
+        })
+      }
+
+      let projectedFinish = null
+      if (raceStartTime) {
+        const finishDate = new Date(new Date(raceStartTime).getTime() + totalSeconds * 1000)
+        projectedFinish = finishDate.toISOString()
+      }
+
+      const totalHours = Math.floor(totalSeconds / 3600)
+      const totalMins = Math.floor((totalSeconds % 3600) / 60)
+      const totalSecs = Math.round(totalSeconds % 60)
+
+      return {
+        team: team.name,
+        runnerCount: team.runners.length,
+        runners: team.runners.map(r => ({
+          name: r.name,
+          van: r.vanNumber,
+          order: r.runOrder,
+          paceSeconds: r.projectedPace,
+          pace: `${Math.floor(r.projectedPace / 60)}:${Math.round(r.projectedPace % 60).toString().padStart(2, '0')}/mi`,
+          assignedLegs: getRunnerLegNumbers(r),
+          customAssignments: r.legAssignments || null,
+        })),
+        totalSeconds: Math.round(totalSeconds),
+        totalFormatted: `${totalHours}h ${totalMins}m ${totalSecs}s`,
+        raceStartTime,
+        projectedFinish,
+        projectedFinishLocal: projectedFinish
+          ? new Date(projectedFinish).toISOString()
+          : null,
+        legBreakdown,
+      }
+    })
+
+    res.json({ success: true, data: debug })
+  } catch (error) {
+    console.error('Debug error:', error)
+    res.status(500).json({ success: false, error: 'Failed to generate debug data' })
+  }
+})
+
 export default router
