@@ -161,6 +161,14 @@ router.get('/', async (req, res) => {
         milesCompleted += (currentLegData?.distance || 5) * partialProgress
       }
 
+      // Compute projected finish time = raceStartTime + sum of all legTimings
+      let projectedFinishTime: string | null = null
+      if (raceStartTime) {
+        const totalLegTime = legTimings.reduce((sum, t) => sum + t, 0)
+        const finishDate = new Date(new Date(raceStartTime).getTime() + totalLegTime * 1000)
+        projectedFinishTime = finishDate.toISOString()
+      }
+
       return {
         team: {
           id: team.id,
@@ -178,6 +186,7 @@ router.get('/', async (req, res) => {
           ? { id: currentRunner.id, name: currentRunner.name }
           : null,
         paceVsProjected,
+        projectedFinishTime,
         totalKills,
         rank: 0,
         legTimings,

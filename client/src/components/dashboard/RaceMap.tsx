@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap } from 'react-leaflet'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
-import { ChevronRight, MapPin } from 'lucide-react'
+import { MapPin } from 'lucide-react'
 import type { Leg, TeamStanding } from '@/types'
 import { cn } from '@/lib/utils'
 
@@ -251,7 +251,6 @@ function interpolateAlongPath(path: [number, number][], progress: number): [numb
 export default function RaceMap({ legs, standings, raceStartTime, routePaths }: RaceMapProps) {
   const [selectedLeg, setSelectedLeg] = useState<Leg | null>(null)
   const [vanFocus, setVanFocus] = useState<[number, number] | null>(null)
-  const [sidebarOpen, setSidebarOpen] = useState(true)
   const [tick, setTick] = useState(0)
 
   // Tick every 5 seconds to update van positions
@@ -436,65 +435,48 @@ export default function RaceMap({ legs, standings, raceStartTime, routePaths }: 
   return (
     <div className="h-[500px] rounded-lg overflow-hidden border flex">
       {/* Leg sidebar */}
-      <div className={cn(
-        "bg-background border-r flex flex-col transition-all duration-300",
-        sidebarOpen ? "w-64" : "w-0"
-      )}>
-        {sidebarOpen && (
-          <>
-            <div className="p-3 border-b bg-muted/50 flex items-center justify-between">
-              <h4 className="font-semibold text-sm">Race Legs</h4>
-              <button
-                onClick={() => {
-                  setVanFocus(null)
-                  setSelectedLeg(null)
-                }}
-                className="text-xs text-primary hover:underline"
-              >
-                View All
-              </button>
-            </div>
-            <div className="flex-1 overflow-y-auto">
-              {sortedLegs.map((leg) => (
-                <button
-                  key={leg.legNumber}
-                  onClick={() => { setVanFocus(null); setSelectedLeg(leg) }}
-                  className={cn(
-                    "w-full px-3 py-2 text-left hover:bg-muted/50 flex items-center gap-2 border-b text-sm transition-colors",
-                    selectedLeg?.legNumber === leg.legNumber && "bg-primary/10 border-l-2 border-l-primary"
+      <div className="w-64 bg-background border-r flex flex-col">
+        <div className="p-3 border-b bg-muted/50 flex items-center justify-between">
+          <h4 className="font-semibold text-sm">Race Legs</h4>
+          <button
+            onClick={() => {
+              setVanFocus(null)
+              setSelectedLeg(null)
+            }}
+            className="text-xs text-primary hover:underline"
+          >
+            View All
+          </button>
+        </div>
+        <div className="flex-1 overflow-y-auto">
+          {sortedLegs.map((leg) => (
+            <button
+              key={leg.legNumber}
+              onClick={() => { setVanFocus(null); setSelectedLeg(leg) }}
+              className={cn(
+                "w-full px-3 py-2 text-left hover:bg-muted/50 flex items-center gap-2 border-b text-sm transition-colors",
+                selectedLeg?.legNumber === leg.legNumber && "bg-primary/10 border-l-2 border-l-primary"
+              )}
+            >
+              <MapPin className="h-3 w-3 text-muted-foreground flex-shrink-0" />
+              <div className="flex-1 min-w-0">
+                <div className="font-medium">Leg {leg.legNumber}</div>
+                <div className="text-xs text-muted-foreground">
+                  {leg.distance.toFixed(2)} mi
+                  {leg.difficulty && (
+                    <span className={cn(
+                      "ml-2 px-1.5 py-0.5 rounded text-[10px] font-medium",
+                      getDifficultyColor(leg.difficulty)
+                    )}>
+                      {leg.difficulty}
+                    </span>
                   )}
-                >
-                  <MapPin className="h-3 w-3 text-muted-foreground flex-shrink-0" />
-                  <div className="flex-1 min-w-0">
-                    <div className="font-medium">Leg {leg.legNumber}</div>
-                    <div className="text-xs text-muted-foreground">
-                      {leg.distance.toFixed(2)} mi
-                      {leg.difficulty && (
-                        <span className={cn(
-                          "ml-2 px-1.5 py-0.5 rounded text-[10px] font-medium",
-                          getDifficultyColor(leg.difficulty)
-                        )}>
-                          {leg.difficulty}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                  <ChevronRight className="h-3 w-3 text-muted-foreground" />
-                </button>
-              ))}
-            </div>
-          </>
-        )}
+                </div>
+              </div>
+            </button>
+          ))}
+        </div>
       </div>
-
-      {/* Toggle sidebar button */}
-      <button
-        onClick={() => setSidebarOpen(!sidebarOpen)}
-        className="absolute left-0 top-1/2 -translate-y-1/2 z-[1000] bg-background border rounded-r-md px-1 py-2 shadow-md hover:bg-muted"
-        style={{ marginLeft: sidebarOpen ? '256px' : '0' }}
-      >
-        <ChevronRight className={cn("h-4 w-4 transition-transform", sidebarOpen && "rotate-180")} />
-      </button>
 
       {/* Map container */}
       <div className="flex-1 relative">

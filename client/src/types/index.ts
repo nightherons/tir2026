@@ -61,6 +61,7 @@ export interface TeamStanding {
   currentLeg: number
   currentRunner?: Runner
   paceVsProjected: number // positive = behind, negative = ahead
+  projectedFinishTime?: string // ISO string
   totalKills: number
   rank: number
   milesCompleted?: number

@@ -96,11 +96,16 @@ export default function Leaderboard({ standings, totalMiles }: LeaderboardProps)
                 </div>
               </div>
 
-              {/* Miles and pace */}
+              {/* Miles and projected finish */}
               <div className="text-right">
                 <div className="font-mono font-semibold text-foreground">
                   {standing.milesCompleted?.toFixed(1) || '0.0'}/{totalMiles.toFixed(1)} mi
                 </div>
+                {standing.projectedFinishTime ? (
+                  <div className="text-sm text-muted-foreground">
+                    <span>Projected Finish: {new Date(standing.projectedFinishTime).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}</span>
+                  </div>
+                ) : null}
                 <div className={cn(
                   "flex items-center justify-end gap-1 text-sm font-medium",
                   standing.paceVsProjected < 0 ? "text-green-600 dark:text-green-400" :
