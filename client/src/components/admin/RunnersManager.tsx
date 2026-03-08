@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react'
+import React, { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Plus, Pencil, Trash2, KeyRound, Users } from 'lucide-react'
 import { adminApi } from '../../services/api'
@@ -10,20 +10,193 @@ import { Button } from '../ui/button'
 import { Input } from '../ui/input'
 import { Badge } from '../ui/badge'
 
+function RunnerEditForm({
+  runner,
+  teams,
+  onCancel,
+  onSaved,
+}: {
+  runner?: Runner
+  teams: Team[]
+  onCancel: () => void
+  onSaved: () => void
+}) {
+  const isEditing = !!runner
+  const [formData, setFormData] = useState(() => {
+    let legAssignmentsStr = ''
+    if (runner?.legAssignments) {
+      try {
+        const parsed = JSON.parse(runner.legAssignments)
+        if (Array.isArray(parsed)) legAssignmentsStr = parsed.join(', ')
+      } catch { /* ignore */ }
+    }
+    return {
+      name: runner?.name || '',
+      teamId: runner?.teamId || teams[0]?.id || '',
+      vanNumber: runner?.vanNumber || 1,
+      runOrder: runner?.runOrder || 1,
+      projectedPace: runner?.projectedPace || 420,
+      legAssignments: legAssignmentsStr,
+    }
+  })
+
+  const createMutation = useMutation({
+    mutationFn: (data: Parameters<typeof adminApi.createRunner>[0]) => adminApi.createRunner(data),
+    onSuccess: () => onSaved(),
+  })
+
+  const updateMutation = useMutation({
+    mutationFn: ({ id, data }: { id: string; data: Record<string, unknown> }) =>
+      adminApi.updateRunner(id, data),
+    onSuccess: () => onSaved(),
+  })
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    const legNums = formData.legAssignments
+      .split(',')
+      .map((s) => parseInt(s.trim()))
+      .filter((n) => !isNaN(n) && n >= 1 && n <= 36)
+    const submitData = {
+      ...formData,
+      legAssignments: legNums.length > 0 ? JSON.stringify(legNums) : null,
+    }
+    if (isEditing) {
+      updateMutation.mutate({ id: runner.id, data: submitData })
+    } else {
+      createMutation.mutate(submitData)
+    }
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-4 p-4 bg-muted/50 rounded-lg border">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+        <div className="lg:col-span-2 space-y-2">
+          <label className="text-sm font-medium">Name</label>
+          <Input
+            value={formData.name}
+            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+            placeholder="Runner name"
+            required
+          />
+        </div>
+        {!isEditing && (
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Team</label>
+            <select
+              value={formData.teamId}
+              onChange={(e) => setFormData({ ...formData, teamId: e.target.value })}
+              className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+              required
+            >
+              <option value="">Select...</option>
+              {teams.map((team) => (
+                <option key={team.id} value={team.id}>
+                  {team.name}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
+        <div className="space-y-2">
+          <label className="text-sm font-medium">Van</label>
+          <select
+            value={formData.vanNumber}
+            onChange={(e) =>
+              setFormData({ ...formData, vanNumber: parseInt(e.target.value) as 1 | 2 })
+            }
+            className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+          >
+            <option value={1}>Van 1</option>
+            <option value={2}>Van 2</option>
+          </select>
+        </div>
+        <div className="space-y-2">
+          <label className="text-sm font-medium">Order (1-6)</label>
+          <Input
+            type="number"
+            min="1"
+            max="6"
+            value={formData.runOrder}
+            onChange={(e) =>
+              setFormData({ ...formData, runOrder: parseInt(e.target.value) })
+            }
+            required
+          />
+        </div>
+      </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <label className="text-sm font-medium">Projected Pace (min:sec per mile)</label>
+          <div className="flex gap-2 items-center">
+            <Input
+              type="number"
+              min="4"
+              max="15"
+              className="w-20"
+              value={Math.floor(formData.projectedPace / 60)}
+              onChange={(e) =>
+                setFormData({
+                  ...formData,
+                  projectedPace:
+                    parseInt(e.target.value) * 60 + (formData.projectedPace % 60),
+                })
+              }
+              placeholder="min"
+            />
+            <span className="text-muted-foreground">:</span>
+            <Input
+              type="number"
+              min="0"
+              max="59"
+              className="w-20"
+              value={formData.projectedPace % 60}
+              onChange={(e) =>
+                setFormData({
+                  ...formData,
+                  projectedPace:
+                    Math.floor(formData.projectedPace / 60) * 60 +
+                    parseInt(e.target.value),
+                })
+              }
+              placeholder="sec"
+            />
+            <span className="text-sm text-muted-foreground">per mile</span>
+          </div>
+        </div>
+        <div className="space-y-2">
+          <label className="text-sm font-medium">Leg Assignments (optional)</label>
+          <Input
+            value={formData.legAssignments}
+            onChange={(e) => setFormData({ ...formData, legAssignments: e.target.value })}
+            placeholder="e.g. 1, 12, 23, 34"
+          />
+          <p className="text-xs text-muted-foreground">
+            Comma-separated leg numbers. Leave blank for standard rotation.
+          </p>
+        </div>
+      </div>
+      <div className="flex justify-end gap-3">
+        <Button type="button" variant="outline" size="sm" onClick={onCancel}>
+          Cancel
+        </Button>
+        <Button
+          type="submit"
+          size="sm"
+          disabled={createMutation.isPending || updateMutation.isPending}
+        >
+          {isEditing ? 'Update' : 'Create'}
+        </Button>
+      </div>
+    </form>
+  )
+}
+
 export default function RunnersManager() {
   const queryClient = useQueryClient()
-  const formRef = useRef<HTMLDivElement>(null)
   const [isAdding, setIsAdding] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [filterTeam, setFilterTeam] = useState<string>('')
-  const [formData, setFormData] = useState({
-    name: '',
-    teamId: '',
-    vanNumber: 1,
-    runOrder: 1,
-    projectedPace: 420, // 7:00/mile in seconds
-    legAssignments: '' as string, // comma-separated leg numbers
-  })
 
   const { data: runnersData, isLoading } = useQuery({
     queryKey: ['admin-runners'],
@@ -37,24 +210,6 @@ export default function RunnersManager() {
 
   const runners: Runner[] = runnersData?.data?.data || []
   const teams: Team[] = teamsData?.data?.data || []
-
-  const createMutation = useMutation({
-    mutationFn: (data: Parameters<typeof adminApi.createRunner>[0]) => adminApi.createRunner(data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['admin-runners'] })
-      setIsAdding(false)
-      resetForm()
-    },
-  })
-
-  const updateMutation = useMutation({
-    mutationFn: ({ id, data }: { id: string; data: Record<string, unknown> }) =>
-      adminApi.updateRunner(id, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['admin-runners'] })
-      setEditingId(null)
-    },
-  })
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) => adminApi.deleteRunner(id),
@@ -71,60 +226,10 @@ export default function RunnersManager() {
     },
   })
 
-  const resetForm = () => {
-    setFormData({
-      name: '',
-      teamId: teams[0]?.id || '',
-      vanNumber: 1,
-      runOrder: 1,
-      projectedPace: 420,
-      legAssignments: '',
-    })
-  }
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    // Convert comma-separated leg numbers to JSON array string (or null if empty)
-    const legNums = formData.legAssignments
-      .split(',')
-      .map((s) => parseInt(s.trim()))
-      .filter((n) => !isNaN(n) && n >= 1 && n <= 36)
-    const submitData = {
-      ...formData,
-      legAssignments: legNums.length > 0 ? JSON.stringify(legNums) : null,
-    }
-    if (editingId) {
-      updateMutation.mutate({ id: editingId, data: submitData })
-    } else {
-      createMutation.mutate(submitData)
-    }
-  }
-
-  const startEdit = (runner: Runner) => {
-    setEditingId(runner.id)
-    // Convert JSON array to comma-separated string for editing
-    let legAssignmentsStr = ''
-    if (runner.legAssignments) {
-      try {
-        const parsed = JSON.parse(runner.legAssignments)
-        if (Array.isArray(parsed)) legAssignmentsStr = parsed.join(', ')
-      } catch { /* ignore */ }
-    }
-    setFormData({
-      name: runner.name,
-      teamId: runner.teamId,
-      vanNumber: runner.vanNumber,
-      runOrder: runner.runOrder,
-      projectedPace: runner.projectedPace,
-      legAssignments: legAssignmentsStr,
-    })
-    setIsAdding(false)
-  }
-
-  const cancelEdit = () => {
+  const handleSaved = () => {
+    queryClient.invalidateQueries({ queryKey: ['admin-runners'] })
     setEditingId(null)
     setIsAdding(false)
-    resetForm()
   }
 
   const filteredRunners = filterTeam
@@ -138,13 +243,6 @@ export default function RunnersManager() {
     acc[key].push(runner)
     return acc
   }, {} as Record<string, Runner[]>)
-
-  // Scroll to form when it opens
-  useEffect(() => {
-    if ((isAdding || editingId) && formRef.current) {
-      formRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' })
-    }
-  }, [isAdding, editingId])
 
   if (isLoading) {
     return (
@@ -185,128 +283,18 @@ export default function RunnersManager() {
         </div>
       </div>
 
-      {/* Add/Edit form */}
-      {(isAdding || editingId) && (
-        <Card ref={formRef}>
+      {/* Add form (top-level, only for new runners) */}
+      {isAdding && (
+        <Card>
           <CardHeader>
-            <CardTitle>{editingId ? 'Edit Runner' : 'Add New Runner'}</CardTitle>
+            <CardTitle>Add New Runner</CardTitle>
           </CardHeader>
           <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-                <div className="lg:col-span-2 space-y-2">
-                  <label className="text-sm font-medium">Name</label>
-                  <Input
-                    value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    placeholder="Runner name"
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Team</label>
-                  <select
-                    value={formData.teamId}
-                    onChange={(e) => setFormData({ ...formData, teamId: e.target.value })}
-                    className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-                    required
-                  >
-                    <option value="">Select...</option>
-                    {teams.map((team) => (
-                      <option key={team.id} value={team.id}>
-                        {team.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Van</label>
-                  <select
-                    value={formData.vanNumber}
-                    onChange={(e) =>
-                      setFormData({ ...formData, vanNumber: parseInt(e.target.value) as 1 | 2 })
-                    }
-                    className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-                  >
-                    <option value={1}>Van 1</option>
-                    <option value={2}>Van 2</option>
-                  </select>
-                </div>
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Order (1-6)</label>
-                  <Input
-                    type="number"
-                    min="1"
-                    max="6"
-                    value={formData.runOrder}
-                    onChange={(e) =>
-                      setFormData({ ...formData, runOrder: parseInt(e.target.value) })
-                    }
-                    required
-                  />
-                </div>
-              </div>
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Projected Pace (min:sec per mile)</label>
-                <div className="flex gap-2 items-center">
-                  <Input
-                    type="number"
-                    min="4"
-                    max="15"
-                    className="w-20"
-                    value={Math.floor(formData.projectedPace / 60)}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        projectedPace:
-                          parseInt(e.target.value) * 60 + (formData.projectedPace % 60),
-                      })
-                    }
-                    placeholder="min"
-                  />
-                  <span className="text-muted-foreground">:</span>
-                  <Input
-                    type="number"
-                    min="0"
-                    max="59"
-                    className="w-20"
-                    value={formData.projectedPace % 60}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        projectedPace:
-                          Math.floor(formData.projectedPace / 60) * 60 +
-                          parseInt(e.target.value),
-                      })
-                    }
-                    placeholder="sec"
-                  />
-                  <span className="text-sm text-muted-foreground">per mile</span>
-                </div>
-              </div>
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Leg Assignments (optional)</label>
-                <Input
-                  value={formData.legAssignments}
-                  onChange={(e) => setFormData({ ...formData, legAssignments: e.target.value })}
-                  placeholder="e.g. 1, 12, 23, 34"
-                />
-                <p className="text-xs text-muted-foreground">
-                  Comma-separated leg numbers. Leave blank to use standard rotation.
-                </p>
-              </div>
-              <div className="flex justify-end gap-3">
-                <Button type="button" variant="outline" onClick={cancelEdit}>
-                  Cancel
-                </Button>
-                <Button
-                  type="submit"
-                  disabled={createMutation.isPending || updateMutation.isPending}
-                >
-                  {editingId ? 'Update' : 'Create'}
-                </Button>
-              </div>
-            </form>
+            <RunnerEditForm
+              teams={teams}
+              onCancel={() => setIsAdding(false)}
+              onSaved={handleSaved}
+            />
           </CardContent>
         </Card>
       )}
@@ -342,45 +330,63 @@ export default function RunnersManager() {
                         {vanRunners
                           .sort((a, b) => a.runOrder - b.runOrder)
                           .map((runner) => (
-                            <tr key={runner.id} className="group">
-                              <td className="py-3">
-                                <Badge variant="outline">{runner.runOrder}</Badge>
-                              </td>
-                              <td className="py-3 font-medium">{runner.name}</td>
-                              <td className="py-3 text-sm text-muted-foreground">
-                                {getRunnerLegNumbers(runner).join(', ')}
-                              </td>
-                              <td className="py-3 font-mono text-muted-foreground">
-                                {formatPace(runner.projectedPace)}
-                              </td>
-                              <td className="py-3 text-right">
-                                <div className="flex justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                  <Button size="icon" variant="ghost" onClick={() => startEdit(runner)}>
-                                    <Pencil className="h-4 w-4" />
-                                  </Button>
-                                  <Button
-                                    size="icon"
-                                    variant="ghost"
-                                    onClick={() => regeneratePinMutation.mutate(runner.id)}
-                                    title="Generate new PIN"
-                                  >
-                                    <KeyRound className="h-4 w-4" />
-                                  </Button>
-                                  <Button
-                                    size="icon"
-                                    variant="ghost"
-                                    className="text-destructive hover:text-destructive"
-                                    onClick={() => {
-                                      if (confirm('Delete this runner?')) {
-                                        deleteMutation.mutate(runner.id)
-                                      }
-                                    }}
-                                  >
-                                    <Trash2 className="h-4 w-4" />
-                                  </Button>
-                                </div>
-                              </td>
-                            </tr>
+                            <React.Fragment key={runner.id}>
+                              <tr className="group">
+                                <td className="py-3">
+                                  <Badge variant="outline">{runner.runOrder}</Badge>
+                                </td>
+                                <td className="py-3 font-medium">{runner.name}</td>
+                                <td className="py-3 text-sm text-muted-foreground">
+                                  {getRunnerLegNumbers(runner).join(', ')}
+                                </td>
+                                <td className="py-3 font-mono text-muted-foreground">
+                                  {formatPace(runner.projectedPace)}
+                                </td>
+                                <td className="py-3 text-right">
+                                  <div className="flex justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <Button
+                                      size="icon"
+                                      variant="ghost"
+                                      onClick={() => setEditingId(editingId === runner.id ? null : runner.id)}
+                                    >
+                                      <Pencil className="h-4 w-4" />
+                                    </Button>
+                                    <Button
+                                      size="icon"
+                                      variant="ghost"
+                                      onClick={() => regeneratePinMutation.mutate(runner.id)}
+                                      title="Generate new PIN"
+                                    >
+                                      <KeyRound className="h-4 w-4" />
+                                    </Button>
+                                    <Button
+                                      size="icon"
+                                      variant="ghost"
+                                      className="text-destructive hover:text-destructive"
+                                      onClick={() => {
+                                        if (confirm('Delete this runner?')) {
+                                          deleteMutation.mutate(runner.id)
+                                        }
+                                      }}
+                                    >
+                                      <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                  </div>
+                                </td>
+                              </tr>
+                              {editingId === runner.id && (
+                                <tr>
+                                  <td colSpan={5} className="py-3">
+                                    <RunnerEditForm
+                                      runner={runner}
+                                      teams={teams}
+                                      onCancel={() => setEditingId(null)}
+                                      onSaved={handleSaved}
+                                    />
+                                  </td>
+                                </tr>
+                              )}
+                            </React.Fragment>
                           ))}
                       </tbody>
                     </table>
