@@ -380,40 +380,6 @@ export default function RaceMap({ legs, standings, raceStartTime, routePaths }: 
         }
       }
 
-      // Also show the other van at their last completed exchange
-      const otherVan = activeVan === 1 ? 2 : 1
-      let otherVanLeg: number
-
-      if (activeVan === 1) {
-        if (currentLeg <= 6) otherVanLeg = 0
-        else if (currentLeg <= 12) otherVanLeg = currentLeg - 6
-        else if (currentLeg <= 18) otherVanLeg = 12
-        else if (currentLeg <= 24) otherVanLeg = currentLeg - 6
-        else if (currentLeg <= 30) otherVanLeg = 24
-        else otherVanLeg = currentLeg - 6
-      } else {
-        if (currentLeg <= 6) otherVanLeg = currentLeg
-        else if (currentLeg <= 12) otherVanLeg = 6
-        else if (currentLeg <= 18) otherVanLeg = currentLeg - 6
-        else if (currentLeg <= 24) otherVanLeg = 18
-        else if (currentLeg <= 30) otherVanLeg = currentLeg - 6
-        else otherVanLeg = 30
-      }
-
-      if (otherVanLeg > 0) {
-        const otherLeg = legs.find(l => l.legNumber === otherVanLeg)
-        if (otherLeg && otherLeg.endLat && otherLeg.endLng) {
-          positions.push({
-            teamName,
-            teamColor,
-            vanNumber: otherVan,
-            lat: otherLeg.endLat,
-            lng: otherLeg.endLng,
-            currentLeg: otherVanLeg,
-            totalTime: 'Waiting',
-          })
-        }
-      }
     }
 
     // Apply offsets to spread out vans at the same position
