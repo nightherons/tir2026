@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Plus, Pencil, Trash2, KeyRound, Users } from 'lucide-react'
 import { adminApi } from '../../services/api'
@@ -12,6 +12,7 @@ import { Badge } from '../ui/badge'
 
 export default function RunnersManager() {
   const queryClient = useQueryClient()
+  const formRef = useRef<HTMLDivElement>(null)
   const [isAdding, setIsAdding] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [filterTeam, setFilterTeam] = useState<string>('')
@@ -138,6 +139,13 @@ export default function RunnersManager() {
     return acc
   }, {} as Record<string, Runner[]>)
 
+  // Scroll to form when it opens
+  useEffect(() => {
+    if ((isAdding || editingId) && formRef.current) {
+      formRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    }
+  }, [isAdding, editingId])
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-12">
@@ -179,7 +187,7 @@ export default function RunnersManager() {
 
       {/* Add/Edit form */}
       {(isAdding || editingId) && (
-        <Card>
+        <Card ref={formRef}>
           <CardHeader>
             <CardTitle>{editingId ? 'Edit Runner' : 'Add New Runner'}</CardTitle>
           </CardHeader>
