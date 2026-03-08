@@ -146,6 +146,20 @@ router.get('/', async (req, res) => {
         paceVsProjected = totalTime - projectedForCompletedLegs
       }
 
+      // Calculate miles completed based on race position
+      let milesCompleted = 0
+      const completedFullLegs = Math.floor(racePosition)
+      for (let i = 0; i < completedFullLegs && i < 36; i++) {
+        const leg = legsByNumber.get(i + 1)
+        milesCompleted += leg?.distance || 5
+      }
+      // Add partial distance for leg in progress
+      const partialProgress = racePosition - completedFullLegs
+      if (completedFullLegs < 36) {
+        const currentLegData = legsByNumber.get(completedFullLegs + 1)
+        milesCompleted += (currentLegData?.distance || 5) * partialProgress
+      }
+
       return {
         team: {
           id: team.id,
@@ -158,6 +172,7 @@ router.get('/', async (req, res) => {
         completedLegs: Math.max(completedLegs, currentLeg - 1),
         currentLeg,
         racePosition,
+        milesCompleted: Math.round(milesCompleted * 10) / 10,
         currentRunner: currentRunner
           ? { id: currentRunner.id, name: currentRunner.name }
           : null,
@@ -175,10 +190,14 @@ router.get('/', async (req, res) => {
       s.rank = index + 1
     })
 
+    // Calculate total race miles
+    const totalMiles = allLegs.reduce((sum, l) => sum + l.distance, 0)
+
     res.json({
       success: true,
       data: {
         standings,
+        totalMiles: Math.round(totalMiles * 10) / 10,
         raceStartTime,
         lastUpdate: new Date().toISOString(),
       },

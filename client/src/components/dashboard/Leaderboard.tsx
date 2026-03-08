@@ -1,12 +1,13 @@
 import { Trophy, TrendingUp, TrendingDown, Minus, Users } from 'lucide-react'
 import type { TeamStanding } from '../../types'
-import { formatTime, formatPaceDiff } from '../../utils/time'
+import { formatPaceDiff } from '../../utils/time'
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card'
 import { Badge } from '../ui/badge'
 import { cn } from '@/lib/utils'
 
 interface LeaderboardProps {
   standings: TeamStanding[]
+  totalMiles: number
 }
 
 const teamColors: Record<string, { bg: string; text: string; border: string }> = {
@@ -18,7 +19,7 @@ const teamColors: Record<string, { bg: string; text: string; border: string }> =
   GREEN: { bg: 'bg-green-600', text: 'text-white', border: 'border-green-400' },
 }
 
-export default function Leaderboard({ standings }: LeaderboardProps) {
+export default function Leaderboard({ standings, totalMiles }: LeaderboardProps) {
   const sortedStandings = [...standings].sort((a, b) => a.rank - b.rank)
 
   return (
@@ -95,10 +96,10 @@ export default function Leaderboard({ standings }: LeaderboardProps) {
                 </div>
               </div>
 
-              {/* Time and pace */}
+              {/* Miles and pace */}
               <div className="text-right">
                 <div className="font-mono font-semibold text-foreground">
-                  {formatTime(standing.totalTime)}
+                  {standing.milesCompleted?.toFixed(1) || '0.0'}/{totalMiles.toFixed(1)} mi
                 </div>
                 <div className={cn(
                   "flex items-center justify-end gap-1 text-sm font-medium",

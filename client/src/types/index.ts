@@ -63,11 +63,13 @@ export interface TeamStanding {
   paceVsProjected: number // positive = behind, negative = ahead
   totalKills: number
   rank: number
+  milesCompleted?: number
   legTimings?: number[] // seconds per leg (36 entries)
 }
 
 export interface DashboardData {
   standings: TeamStanding[]
+  totalMiles?: number
   raceStartTime?: string
   lastUpdate: string
 }

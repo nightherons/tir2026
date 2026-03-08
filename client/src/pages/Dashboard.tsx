@@ -15,6 +15,7 @@ import LegWinners from '../components/dashboard/LegWinners'
 export default function Dashboard() {
   const { onLeaderboardUpdate, onTimeEntered } = useSocketStore()
   const [standings, setStandings] = useState<TeamStanding[]>([])
+  const [totalMiles, setTotalMiles] = useState<number>(0)
   const [raceStartTime, setRaceStartTime] = useState<string | undefined>()
 
   const { data, isLoading, error } = useQuery({
@@ -47,6 +48,9 @@ export default function Dashboard() {
   useEffect(() => {
     if (data?.data?.data?.standings) {
       setStandings(data.data.data.standings)
+    }
+    if (data?.data?.data?.totalMiles) {
+      setTotalMiles(data.data.data.totalMiles)
     }
     if (data?.data?.data?.raceStartTime) {
       setRaceStartTime(data.data.data.raceStartTime)
@@ -103,7 +107,7 @@ export default function Dashboard() {
       </div>
 
       {/* Team Standings */}
-      <Leaderboard standings={standings} />
+      <Leaderboard standings={standings} totalMiles={totalMiles} />
 
       {/* Leg Winners */}
       <LegWinners />
