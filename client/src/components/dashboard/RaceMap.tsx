@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap } from 'react-leaflet'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
@@ -246,6 +246,50 @@ function interpolateAlongPath(path: [number, number][], progress: number): [numb
     }
   }
   return path[path.length - 1]
+}
+
+// Van marker that zooms first, shows popup only when already zoomed in, and auto-closes after 2s
+function VanMarker({ van, legs, icon, onZoomToVan }: {
+  van: VanPosition
+  legs: Leg[]
+  icon: L.DivIcon
+  onZoomToVan: (van: VanPosition, leg: Leg) => void
+}) {
+  const map = useMap()
+  const markerRef = useRef<L.Marker>(null)
+
+  const handleClick = () => {
+    const zoom = map.getZoom()
+    if (zoom >= 12) {
+      // Already zoomed in — open popup and auto-close after 2s
+      markerRef.current?.openPopup()
+      setTimeout(() => {
+        markerRef.current?.closePopup()
+      }, 2000)
+    } else {
+      // Not zoomed in — zoom to the van's leg, suppress popup
+      markerRef.current?.closePopup()
+      const leg = legs.find(l => l.legNumber === van.currentLeg)
+      if (leg) {
+        onZoomToVan(van, leg)
+      }
+    }
+  }
+
+  return (
+    <Marker
+      ref={markerRef}
+      position={[van.offsetLat ?? van.lat, van.offsetLng ?? van.lng]}
+      icon={icon}
+      eventHandlers={{ click: handleClick }}
+    >
+      <Popup autoClose={false} closeOnClick={false}>
+        <strong>{van.teamName} Van {van.vanNumber}</strong><br />
+        Leg {van.currentLeg}<br />
+        {van.milesCompleted}
+      </Popup>
+    </Marker>
+  )
 }
 
 export default function RaceMap({ legs, standings, raceStartTime, routePaths }: RaceMapProps) {
@@ -566,26 +610,16 @@ export default function RaceMap({ legs, standings, raceStartTime, routePaths }: 
 
           {/* Van markers */}
           {vanPositions.map((van, idx) => (
-            <Marker
+            <VanMarker
               key={`${van.teamName}-${van.vanNumber}-${idx}`}
-              position={[van.offsetLat ?? van.lat, van.offsetLng ?? van.lng]}
+              van={van}
+              legs={legs}
               icon={createVanIcon(van.teamColor, van.vanNumber)}
-              eventHandlers={{
-                click: () => {
-                  const leg = legs.find(l => l.legNumber === van.currentLeg)
-                  if (leg) {
-                    setVanFocus([van.offsetLat ?? van.lat, van.offsetLng ?? van.lng])
-                    setSelectedLeg(leg)
-                  }
-                },
+              onZoomToVan={(v, leg) => {
+                setVanFocus([v.offsetLat ?? v.lat, v.offsetLng ?? v.lng])
+                setSelectedLeg(leg)
               }}
-            >
-              <Popup>
-                <strong>{van.teamName} Van {van.vanNumber}</strong><br />
-                Leg {van.currentLeg}<br />
-                {van.milesCompleted}
-              </Popup>
-            </Marker>
+            />
           ))}
         </MapContainer>
       </div>
