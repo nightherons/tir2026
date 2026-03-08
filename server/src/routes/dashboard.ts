@@ -87,22 +87,42 @@ router.get('/', async (req, res) => {
         }
       }
 
-      // Determine current leg: use elapsed time if race has started, otherwise first incomplete
+      // Determine current leg and race position using elapsed time
       let currentLeg = completedLegs + 1
+      let racePosition = completedLegs // fractional position along course (e.g. 6.4 = 40% through leg 7)
+      let effectiveTotalTime = totalTime
+
       if (raceStartTime) {
         const raceStart = new Date(raceStartTime).getTime()
         const elapsed = (Date.now() - raceStart) / 1000
         if (elapsed > 0) {
           let cumulative = 0
+          let found = false
           for (let i = 0; i < 36; i++) {
-            cumulative += legTimings[i]
-            if (cumulative > elapsed) {
+            if (cumulative + legTimings[i] > elapsed) {
+              const progress = (elapsed - cumulative) / legTimings[i]
               currentLeg = Math.max(currentLeg, i + 1)
+              racePosition = Math.max(racePosition, i + progress)
+              found = true
               break
             }
+            cumulative += legTimings[i]
           }
-          if (elapsed >= cumulative) {
+          if (!found) {
             currentLeg = 36
+            racePosition = 36
+          }
+
+          // Effective time = sum of legTimings up to current position
+          // Uses actual times where available, projections otherwise
+          effectiveTotalTime = 0
+          for (let i = 0; i < Math.floor(racePosition); i++) {
+            effectiveTotalTime += legTimings[i]
+          }
+          // Add partial time for leg in progress
+          const partialLeg = racePosition - Math.floor(racePosition)
+          if (Math.floor(racePosition) < 36) {
+            effectiveTotalTime += legTimings[Math.floor(racePosition)] * partialLeg
           }
         }
       }
@@ -110,22 +130,7 @@ router.get('/', async (req, res) => {
       // Get current runner based on calculated current leg
       const currentRunner = runnerByLeg.get(currentLeg) || null
 
-      // Calculate effective total time using elapsed since race start
-      let effectiveTotalTime = totalTime
-      if (raceStartTime) {
-        const raceStart = new Date(raceStartTime).getTime()
-        const elapsed = (Date.now() - raceStart) / 1000
-        if (elapsed > 0) {
-          // Effective time = elapsed time from race start
-          // This is the same for all teams as a baseline, but teams with
-          // faster actual times will have updated legTimings that shift
-          // their currentLeg further ahead
-          effectiveTotalTime = Math.max(totalTime, elapsed)
-        }
-      }
-
       // Calculate pace vs projected: compare actual results against projected times
-      // for completed legs (legs with actual time entries)
       let paceVsProjected = 0
       if (allResults.length > 0) {
         let projectedForCompletedLegs = 0
@@ -152,6 +157,7 @@ router.get('/', async (req, res) => {
         projectedTime,
         completedLegs: Math.max(completedLegs, currentLeg - 1),
         currentLeg,
+        racePosition,
         currentRunner: currentRunner
           ? { id: currentRunner.id, name: currentRunner.name }
           : null,
@@ -162,13 +168,8 @@ router.get('/', async (req, res) => {
       }
     })
 
-    // Sort by current leg (further ahead = better), then total time
-    standings.sort((a, b) => {
-      if (a.currentLeg !== b.currentLeg) {
-        return b.currentLeg - a.currentLeg
-      }
-      return a.totalTime - b.totalTime
-    })
+    // Sort by race position (further ahead = better rank)
+    standings.sort((a, b) => b.racePosition - a.racePosition)
 
     standings.forEach((s, index) => {
       s.rank = index + 1
