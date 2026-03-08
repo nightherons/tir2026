@@ -161,22 +161,27 @@ interface RaceMapProps {
 }
 
 // Component to fit map bounds on initial load
-function FitBounds({ legs, selectedLeg, routePaths }: { legs: Leg[], selectedLeg: Leg | null, routePaths?: Record<string, [number, number][]> }) {
+function FitBounds({ legs, selectedLeg, vanFocus, routePaths }: { legs: Leg[], selectedLeg: Leg | null, vanFocus?: [number, number] | null, routePaths?: Record<string, [number, number][]> }) {
   const map = useMap()
 
   useEffect(() => {
     if (selectedLeg) {
-      // Zoom to selected leg using detailed path if available
-      const path = routePaths?.[String(selectedLeg.legNumber)]
-      if (path && path.length >= 2) {
-        const bounds = L.latLngBounds(path.map(p => [p[0], p[1]] as [number, number]))
-        map.fitBounds(bounds, { padding: [50, 50], maxZoom: 14 })
-      } else if (selectedLeg.startLat && selectedLeg.startLng && selectedLeg.endLat && selectedLeg.endLng) {
-        const bounds = L.latLngBounds([
-          [selectedLeg.startLat, selectedLeg.startLng],
-          [selectedLeg.endLat, selectedLeg.endLng],
-        ])
-        map.fitBounds(bounds, { padding: [50, 50], maxZoom: 14 })
+      if (vanFocus) {
+        // Center on van position and zoom in
+        map.setView(vanFocus, 13, { animate: true })
+      } else {
+        // Zoom to selected leg using detailed path if available
+        const path = routePaths?.[String(selectedLeg.legNumber)]
+        if (path && path.length >= 2) {
+          const bounds = L.latLngBounds(path.map(p => [p[0], p[1]] as [number, number]))
+          map.fitBounds(bounds, { padding: [50, 50], maxZoom: 14 })
+        } else if (selectedLeg.startLat && selectedLeg.startLng && selectedLeg.endLat && selectedLeg.endLng) {
+          const bounds = L.latLngBounds([
+            [selectedLeg.startLat, selectedLeg.startLng],
+            [selectedLeg.endLat, selectedLeg.endLng],
+          ])
+          map.fitBounds(bounds, { padding: [50, 50], maxZoom: 14 })
+        }
       }
     } else if (legs.length > 0) {
       // Fit all legs
@@ -189,7 +194,7 @@ function FitBounds({ legs, selectedLeg, routePaths }: { legs: Leg[], selectedLeg
         map.fitBounds(bounds, { padding: [20, 20] })
       }
     }
-  }, [legs, map, selectedLeg, routePaths])
+  }, [legs, map, selectedLeg, vanFocus, routePaths])
 
   return null
 }
@@ -245,6 +250,7 @@ function interpolateAlongPath(path: [number, number][], progress: number): [numb
 
 export default function RaceMap({ legs, standings, raceStartTime, routePaths }: RaceMapProps) {
   const [selectedLeg, setSelectedLeg] = useState<Leg | null>(null)
+  const [vanFocus, setVanFocus] = useState<[number, number] | null>(null)
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const [tick, setTick] = useState(0)
 
@@ -440,6 +446,7 @@ export default function RaceMap({ legs, standings, raceStartTime, routePaths }: 
               <h4 className="font-semibold text-sm">Race Legs</h4>
               <button
                 onClick={() => {
+                  setVanFocus(null)
                   setSelectedLeg(null)
                 }}
                 className="text-xs text-primary hover:underline"
@@ -451,7 +458,7 @@ export default function RaceMap({ legs, standings, raceStartTime, routePaths }: 
               {sortedLegs.map((leg) => (
                 <button
                   key={leg.legNumber}
-                  onClick={() => setSelectedLeg(leg)}
+                  onClick={() => { setVanFocus(null); setSelectedLeg(leg) }}
                   className={cn(
                     "w-full px-3 py-2 text-left hover:bg-muted/50 flex items-center gap-2 border-b text-sm transition-colors",
                     selectedLeg?.legNumber === leg.legNumber && "bg-primary/10 border-l-2 border-l-primary"
@@ -502,7 +509,7 @@ export default function RaceMap({ legs, standings, raceStartTime, routePaths }: 
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           />
 
-          <FitBounds legs={legs} selectedLeg={selectedLeg} routePaths={routePaths} />
+          <FitBounds legs={legs} selectedLeg={selectedLeg} vanFocus={vanFocus} routePaths={routePaths} />
 
           {/* Route polyline */}
           <Polyline
@@ -584,7 +591,10 @@ export default function RaceMap({ legs, standings, raceStartTime, routePaths }: 
               eventHandlers={{
                 click: () => {
                   const leg = legs.find(l => l.legNumber === van.currentLeg)
-                  if (leg) setSelectedLeg(leg)
+                  if (leg) {
+                    setVanFocus([van.offsetLat ?? van.lat, van.offsetLng ?? van.lng])
+                    setSelectedLeg(leg)
+                  }
                 },
               }}
             >
