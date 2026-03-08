@@ -581,6 +581,12 @@ export default function RaceMap({ legs, standings, raceStartTime, routePaths }: 
               key={`${van.teamName}-${van.vanNumber}-${idx}`}
               position={[van.offsetLat ?? van.lat, van.offsetLng ?? van.lng]}
               icon={createVanIcon(van.teamColor, van.vanNumber)}
+              eventHandlers={{
+                click: () => {
+                  const leg = legs.find(l => l.legNumber === van.currentLeg)
+                  if (leg) setSelectedLeg(leg)
+                },
+              }}
             >
               <Popup>
                 <strong>{van.teamName} Van {van.vanNumber}</strong><br />
