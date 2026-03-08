@@ -79,6 +79,7 @@ export const adminApi = {
     vanNumber: number
     runOrder: number
     projectedPace: number
+    legAssignments?: string | null
   }) => api.post('/admin/runners', data),
   updateRunner: (id: string, data: Record<string, unknown>) =>
     api.put(`/admin/runners/${id}`, data),

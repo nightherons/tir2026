@@ -116,7 +116,7 @@ router.get('/runners', async (req, res) => {
 
 router.post('/runners', async (req, res) => {
   try {
-    const { name, teamId, vanNumber, runOrder, projectedPace } = req.body
+    const { name, teamId, vanNumber, runOrder, projectedPace, legAssignments } = req.body
     const pin = generatePin()
 
     const runner = await prisma.runner.create({
@@ -127,6 +127,7 @@ router.post('/runners', async (req, res) => {
         vanNumber,
         runOrder,
         projectedPace: projectedPace || 420, // Default 7:00/mi
+        legAssignments: legAssignments || null,
       },
       include: { team: true },
     })
@@ -141,11 +142,11 @@ router.post('/runners', async (req, res) => {
 router.put('/runners/:id', async (req, res) => {
   try {
     const { id } = req.params
-    const { name, teamId, vanNumber, runOrder, projectedPace } = req.body
+    const { name, teamId, vanNumber, runOrder, projectedPace, legAssignments } = req.body
 
     const runner = await prisma.runner.update({
       where: { id },
-      data: { name, teamId, vanNumber, runOrder, projectedPace },
+      data: { name, teamId, vanNumber, runOrder, projectedPace, legAssignments: legAssignments ?? undefined },
       include: { team: true },
     })
 

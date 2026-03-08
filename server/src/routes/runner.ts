@@ -1,6 +1,7 @@
 import { Router } from 'express'
 import { PrismaClient } from '@prisma/client'
 import { authMiddleware, runnerAuth } from '../middleware/auth.js'
+import { getRunnerLegNumbers } from '../utils/legAssignments.js'
 
 const router = Router()
 const prisma = new PrismaClient()
@@ -24,8 +25,7 @@ router.get('/legs', authMiddleware, runnerAuth, async (req, res) => {
     }
 
     // Calculate which legs this runner should run
-    const baseLeg = runner.vanNumber === 1 ? runner.runOrder : runner.runOrder + 6
-    const legNumbers = [baseLeg, baseLeg + 12, baseLeg + 24]
+    const legNumbers = getRunnerLegNumbers(runner)
 
     const legs = await prisma.leg.findMany({
       where: {

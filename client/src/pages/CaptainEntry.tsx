@@ -5,6 +5,7 @@ import { LayoutDashboard, LogOut, CheckCircle2, AlertCircle, Clock } from 'lucid
 import { useAuthStore } from '../store/authStore'
 import { captainApi, entryApi } from '../services/api'
 import type { Runner, Leg } from '../types'
+import { getRunnerLegNumbers } from '../utils/legAssignments'
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card'
 import { Button } from '../components/ui/button'
 import { Input } from '../components/ui/input'
@@ -72,12 +73,8 @@ export default function CaptainEntry() {
   // Get legs for selected runner
   const runnerLegs = selectedRunner
     ? legs.filter((leg) => {
-        const vanNumber = selectedRunner.vanNumber
-        const runOrder = selectedRunner.runOrder
-        // Van 1: legs 1-6, 13-18, 25-30
-        // Van 2: legs 7-12, 19-24, 31-36
-        const baseLeg = vanNumber === 1 ? runOrder : runOrder + 6
-        return [baseLeg, baseLeg + 12, baseLeg + 24].includes(leg.legNumber)
+        const assignedLegNumbers = getRunnerLegNumbers(selectedRunner)
+        return assignedLegNumbers.includes(leg.legNumber)
       })
     : []
 

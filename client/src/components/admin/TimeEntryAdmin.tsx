@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Clock, CheckCircle2, AlertCircle } from 'lucide-react'
 import { adminApi } from '../../services/api'
 import type { Runner, Leg, Team } from '../../types'
+import { getRunnerLegNumbers } from '../../utils/legAssignments'
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card'
 import { Button } from '../ui/button'
 import { Input } from '../ui/input'
@@ -45,13 +46,11 @@ export default function TimeEntryAdmin() {
 
   const selectedRunnerObj = allRunners.find((r) => r.id === selectedRunner)
 
-  // Get legs for selected runner based on their van and order
+  // Get legs for selected runner based on their assignments (custom or formula)
   const runnerLegs = selectedRunnerObj
     ? legs.filter((leg) => {
-        const vanNumber = selectedRunnerObj.vanNumber
-        const runOrder = selectedRunnerObj.runOrder
-        const baseLeg = vanNumber === 1 ? runOrder : runOrder + 6
-        return [baseLeg, baseLeg + 12, baseLeg + 24].includes(leg.legNumber)
+        const assignedLegNumbers = getRunnerLegNumbers(selectedRunnerObj)
+        return assignedLegNumbers.includes(leg.legNumber)
       })
     : []
 

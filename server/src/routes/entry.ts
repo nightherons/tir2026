@@ -2,6 +2,7 @@ import { Router } from 'express'
 import { PrismaClient } from '@prisma/client'
 import { authMiddleware, captainOrAdmin } from '../middleware/auth.js'
 import { emitTimeEntered, emitLeaderboardUpdate } from '../socket/handlers.js'
+import { getRunnerLegNumbers } from '../utils/legAssignments.js'
 import { Server } from 'socket.io'
 
 const router = Router()
@@ -27,8 +28,7 @@ router.post('/time', authMiddleware, async (req, res) => {
     }
 
     // Verify this is one of their legs
-    const baseLeg = runner.vanNumber === 1 ? runner.runOrder : runner.runOrder + 6
-    const validLegs = [baseLeg, baseLeg + 12, baseLeg + 24]
+    const validLegs = getRunnerLegNumbers(runner)
 
     if (!validLegs.includes(legNumber)) {
       return res.status(403).json({ success: false, error: 'This is not your leg' })

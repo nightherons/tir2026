@@ -18,6 +18,7 @@ export interface Runner {
   vanNumber: 1 | 2
   runOrder: number
   projectedPace: number // seconds per mile
+  legAssignments?: string | null // JSON array of leg numbers, overrides formula
   legs?: LegResult[]
 }
 

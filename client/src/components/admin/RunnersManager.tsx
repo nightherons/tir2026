@@ -4,6 +4,7 @@ import { Plus, Pencil, Trash2, KeyRound, Users } from 'lucide-react'
 import { adminApi } from '../../services/api'
 import type { Runner, Team } from '../../types'
 import { formatPace } from '../../utils/time'
+import { getRunnerLegNumbers } from '../../utils/legAssignments'
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card'
 import { Button } from '../ui/button'
 import { Input } from '../ui/input'
@@ -20,6 +21,7 @@ export default function RunnersManager() {
     vanNumber: 1,
     runOrder: 1,
     projectedPace: 420, // 7:00/mile in seconds
+    legAssignments: '' as string, // comma-separated leg numbers
   })
 
   const { data: runnersData, isLoading } = useQuery({
@@ -36,7 +38,7 @@ export default function RunnersManager() {
   const teams: Team[] = teamsData?.data?.data || []
 
   const createMutation = useMutation({
-    mutationFn: (data: typeof formData) => adminApi.createRunner(data),
+    mutationFn: (data: Parameters<typeof adminApi.createRunner>[0]) => adminApi.createRunner(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-runners'] })
       setIsAdding(false)
@@ -75,26 +77,45 @@ export default function RunnersManager() {
       vanNumber: 1,
       runOrder: 1,
       projectedPace: 420,
+      legAssignments: '',
     })
   }
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
+    // Convert comma-separated leg numbers to JSON array string (or null if empty)
+    const legNums = formData.legAssignments
+      .split(',')
+      .map((s) => parseInt(s.trim()))
+      .filter((n) => !isNaN(n) && n >= 1 && n <= 36)
+    const submitData = {
+      ...formData,
+      legAssignments: legNums.length > 0 ? JSON.stringify(legNums) : null,
+    }
     if (editingId) {
-      updateMutation.mutate({ id: editingId, data: formData })
+      updateMutation.mutate({ id: editingId, data: submitData })
     } else {
-      createMutation.mutate(formData)
+      createMutation.mutate(submitData)
     }
   }
 
   const startEdit = (runner: Runner) => {
     setEditingId(runner.id)
+    // Convert JSON array to comma-separated string for editing
+    let legAssignmentsStr = ''
+    if (runner.legAssignments) {
+      try {
+        const parsed = JSON.parse(runner.legAssignments)
+        if (Array.isArray(parsed)) legAssignmentsStr = parsed.join(', ')
+      } catch { /* ignore */ }
+    }
     setFormData({
       name: runner.name,
       teamId: runner.teamId,
       vanNumber: runner.vanNumber,
       runOrder: runner.runOrder,
       projectedPace: runner.projectedPace,
+      legAssignments: legAssignmentsStr,
     })
     setIsAdding(false)
   }
@@ -255,6 +276,17 @@ export default function RunnersManager() {
                   <span className="text-sm text-muted-foreground">per mile</span>
                 </div>
               </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Leg Assignments (optional)</label>
+                <Input
+                  value={formData.legAssignments}
+                  onChange={(e) => setFormData({ ...formData, legAssignments: e.target.value })}
+                  placeholder="e.g. 1, 12, 23, 34"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Comma-separated leg numbers. Leave blank to use standard rotation.
+                </p>
+              </div>
               <div className="flex justify-end gap-3">
                 <Button type="button" variant="outline" onClick={cancelEdit}>
                   Cancel
@@ -293,6 +325,7 @@ export default function RunnersManager() {
                         <tr className="border-b">
                           <th className="pb-3 text-left font-medium text-muted-foreground">Order</th>
                           <th className="pb-3 text-left font-medium text-muted-foreground">Name</th>
+                          <th className="pb-3 text-left font-medium text-muted-foreground">Legs</th>
                           <th className="pb-3 text-left font-medium text-muted-foreground">Projected Pace</th>
                           <th className="pb-3 text-right font-medium text-muted-foreground">Actions</th>
                         </tr>
@@ -306,6 +339,9 @@ export default function RunnersManager() {
                                 <Badge variant="outline">{runner.runOrder}</Badge>
                               </td>
                               <td className="py-3 font-medium">{runner.name}</td>
+                              <td className="py-3 text-sm text-muted-foreground">
+                                {getRunnerLegNumbers(runner).join(', ')}
+                              </td>
                               <td className="py-3 font-mono text-muted-foreground">
                                 {formatPace(runner.projectedPace)}
                               </td>

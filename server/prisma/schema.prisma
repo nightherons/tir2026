@@ -25,8 +25,9 @@ model Runner {
   team          Team        @relation(fields: [teamId], references: [id], onDelete: Cascade)
   vanNumber     Int         // 1 or 2
   runOrder      Int         // 1-6 within van
-  projectedPace Int         // seconds per mile
-  createdAt     DateTime    @default(now())
+  projectedPace  Int         // seconds per mile
+  legAssignments String?     // JSON array of leg numbers, e.g. "[1,12,23,34]" — overrides formula
+  createdAt      DateTime    @default(now())
   updatedAt     DateTime    @updatedAt
   legResults    LegResult[]
 

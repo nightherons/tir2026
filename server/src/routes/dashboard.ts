@@ -1,5 +1,6 @@
 import { Router } from 'express'
 import { PrismaClient } from '@prisma/client'
+import { getRunnerLegNumbers } from '../utils/legAssignments.js'
 
 const router = Router()
 const prisma = new PrismaClient()
@@ -39,12 +40,13 @@ router.get('/', async (req, res) => {
 
       // Calculate projected time
       const projectedTime = team.runners.reduce((sum, runner) => {
-        // Get legs for this runner based on van and order
-        const baseLeg = runner.vanNumber === 1 ? runner.runOrder : runner.runOrder + 6
-        const legNumbers = [baseLeg, baseLeg + 12, baseLeg + 24]
+        const legNumbers = getRunnerLegNumbers(runner)
 
-        // Estimate time based on projected pace and assumed leg distances
-        return sum + runner.projectedPace * 5 * 3 // ~5 miles per leg, 3 legs
+        // Estimate time based on projected pace and actual leg distances
+        return sum + legNumbers.reduce((legSum, legNum) => {
+          const leg = legsByNumber.get(legNum)
+          return legSum + runner.projectedPace * (leg?.distance || 5)
+        }, 0)
       }, 0)
 
       // Count completed legs
@@ -53,12 +55,16 @@ router.get('/', async (req, res) => {
       // Get current leg (next incomplete)
       const currentLeg = completedLegs + 1
 
+      // Build a map of legNumber -> runner for this team
+      const runnerByLeg = new Map<number, typeof team.runners[0]>()
+      for (const runner of team.runners) {
+        for (const legNum of getRunnerLegNumbers(runner)) {
+          runnerByLeg.set(legNum, runner)
+        }
+      }
+
       // Get current runner
-      const currentRunnerOrder = ((currentLeg - 1) % 6) + 1
-      const currentVan = currentLeg <= 6 || (currentLeg > 12 && currentLeg <= 18) || currentLeg > 24 && currentLeg <= 30 ? 1 : 2
-      const currentRunner = team.runners.find(
-        (r) => r.vanNumber === currentVan && r.runOrder === currentRunnerOrder
-      )
+      const currentRunner = runnerByLeg.get(currentLeg) || null
 
       // Calculate total kills
       const totalKills = allResults.reduce((sum, r) => sum + r.kills, 0)
@@ -79,12 +85,7 @@ router.get('/', async (req, res) => {
         if (actualTime) {
           legTimings.push(actualTime)
         } else {
-          // Find assigned runner for this leg
-          const runnerOrder = ((legNum - 1) % 6) + 1
-          const van = legNum <= 6 || (legNum > 12 && legNum <= 18) || (legNum > 24 && legNum <= 30) ? 1 : 2
-          const runner = team.runners.find(
-            (r) => r.vanNumber === van && r.runOrder === runnerOrder
-          )
+          const runner = runnerByLeg.get(legNum)
           const pace = runner?.projectedPace || DEFAULT_PACE
           const leg = legsByNumber.get(legNum)
           const distance = leg?.distance || 5
@@ -240,14 +241,7 @@ router.get('/runners/:runnerId', async (req, res) => {
       return res.status(404).json({ success: false, error: 'Runner not found' })
     }
 
-    // Calculate which legs this runner is assigned to based on van/order
-    // Van 1: legs 1-6, 13-18, 25-30 (runner order 1-6 maps to leg position)
-    // Van 2: legs 7-12, 19-24, 31-36
-    const assignedLegs: number[] = []
-    const baseOffset = runner.vanNumber === 1 ? 0 : 6
-    assignedLegs.push(runner.runOrder + baseOffset)        // First round
-    assignedLegs.push(runner.runOrder + baseOffset + 12)   // Second round
-    assignedLegs.push(runner.runOrder + baseOffset + 24)   // Third round
+    const assignedLegs = getRunnerLegNumbers(runner)
 
     // Get leg data for assigned legs
     const legs = await prisma.leg.findMany({
