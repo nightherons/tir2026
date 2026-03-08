@@ -19,6 +19,10 @@ export function getRunnerLegNumbers(runner: {
     }
   }
 
-  const baseLeg = runner.vanNumber === 1 ? runner.runOrder : runner.runOrder + 6
+  // Van 1: runOrder 1-6 maps to legs 1-6
+  // Van 2: runOrder 1-6 maps to legs 7-12, runOrder 7-12 already maps to 7-12
+  const baseLeg = runner.vanNumber === 1
+    ? runner.runOrder
+    : runner.runOrder <= 6 ? runner.runOrder + 6 : runner.runOrder
   return [baseLeg, baseLeg + 12, baseLeg + 24]
 }
