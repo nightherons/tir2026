@@ -49,11 +49,8 @@ router.get('/', async (req, res) => {
         }, 0)
       }, 0)
 
-      // Count completed legs
+      // Count completed legs (actual entries)
       const completedLegs = allResults.length
-
-      // Get current leg (next incomplete)
-      const currentLeg = completedLegs + 1
 
       // Build a map of legNumber -> runner for this team
       const runnerByLeg = new Map<number, typeof team.runners[0]>()
@@ -62,9 +59,6 @@ router.get('/', async (req, res) => {
           runnerByLeg.set(legNum, runner)
         }
       }
-
-      // Get current runner
-      const currentRunner = runnerByLeg.get(currentLeg) || null
 
       // Calculate total kills
       const totalKills = allResults.reduce((sum, r) => sum + r.kills, 0)
@@ -93,6 +87,50 @@ router.get('/', async (req, res) => {
         }
       }
 
+      // Determine current leg: use elapsed time if race has started, otherwise first incomplete
+      let currentLeg = completedLegs + 1
+      if (raceStartTime) {
+        const raceStart = new Date(raceStartTime).getTime()
+        const elapsed = (Date.now() - raceStart) / 1000
+        if (elapsed > 0) {
+          let cumulative = 0
+          for (let i = 0; i < 36; i++) {
+            cumulative += legTimings[i]
+            if (cumulative > elapsed) {
+              currentLeg = Math.max(currentLeg, i + 1)
+              break
+            }
+          }
+          if (elapsed >= cumulative) {
+            currentLeg = 36
+          }
+        }
+      }
+
+      // Get current runner based on calculated current leg
+      const currentRunner = runnerByLeg.get(currentLeg) || null
+
+      // Calculate total time: actual entries + projected elapsed for current leg
+      let effectiveTotalTime = totalTime
+      if (raceStartTime) {
+        const raceStart = new Date(raceStartTime).getTime()
+        const elapsed = (Date.now() - raceStart) / 1000
+        if (elapsed > 0 && currentLeg > completedLegs) {
+          // Add projected times for legs between last actual and current projected leg
+          let projectedSum = 0
+          for (let i = completedLegs; i < currentLeg - 1; i++) {
+            projectedSum += legTimings[i]
+          }
+          // Add partial time for the leg in progress
+          let cumulativeToCurrentLeg = 0
+          for (let i = 0; i < currentLeg - 1; i++) {
+            cumulativeToCurrentLeg += legTimings[i]
+          }
+          const timeIntoCurrentLeg = Math.max(0, elapsed - cumulativeToCurrentLeg)
+          effectiveTotalTime = totalTime + projectedSum + timeIntoCurrentLeg
+        }
+      }
+
       return {
         team: {
           id: team.id,
@@ -100,16 +138,16 @@ router.get('/', async (req, res) => {
           city: team.city,
           color: team.color,
         },
-        totalTime,
+        totalTime: effectiveTotalTime,
         projectedTime,
-        completedLegs,
+        completedLegs: Math.max(completedLegs, currentLeg - 1),
         currentLeg,
         currentRunner: currentRunner
           ? { id: currentRunner.id, name: currentRunner.name }
           : null,
-        paceVsProjected: 0, // Will calculate properly when we have more data
+        paceVsProjected: 0,
         totalKills,
-        rank: 0, // Will set after sorting
+        rank: 0,
         legTimings,
       }
     })
