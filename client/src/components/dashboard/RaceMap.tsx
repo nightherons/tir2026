@@ -111,7 +111,7 @@ interface VanPosition {
   lat: number
   lng: number
   currentLeg: number
-  totalTime: string
+  milesCompleted: string
   offsetLat?: number
   offsetLng?: number
 }
@@ -362,7 +362,7 @@ export default function RaceMap({ legs, standings, raceStartTime, routePaths }: 
           lat: interpolatedLat,
           lng: interpolatedLng,
           currentLeg,
-          totalTime: formatTime(standing.totalTime),
+          milesCompleted: `${standing.milesCompleted?.toFixed(1) || '0.0'} mi`,
         })
       } else {
         // Fallback: place van at start of current leg
@@ -375,7 +375,7 @@ export default function RaceMap({ legs, standings, raceStartTime, routePaths }: 
             lat: leg.startLat,
             lng: leg.startLng,
             currentLeg,
-            totalTime: formatTime(standing.totalTime),
+            milesCompleted: `${standing.milesCompleted?.toFixed(1) || '0.0'} mi`,
           })
         }
       }
@@ -584,8 +584,8 @@ export default function RaceMap({ legs, standings, raceStartTime, routePaths }: 
             >
               <Popup>
                 <strong>{van.teamName} Van {van.vanNumber}</strong><br />
-                {van.totalTime === 'Waiting' ? 'Waiting at exchange' : `Leg ${van.currentLeg}`}<br />
-                {van.totalTime !== 'Waiting' && `Time: ${van.totalTime}`}
+                Leg {van.currentLeg}<br />
+                {van.milesCompleted}
               </Popup>
             </Marker>
           ))}
@@ -593,11 +593,4 @@ export default function RaceMap({ legs, standings, raceStartTime, routePaths }: 
       </div>
     </div>
   )
-}
-
-function formatTime(seconds: number): string {
-  const h = Math.floor(seconds / 3600)
-  const m = Math.floor((seconds % 3600) / 60)
-  const s = seconds % 60
-  return `${h}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`
 }
