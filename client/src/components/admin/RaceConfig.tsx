@@ -37,7 +37,16 @@ export default function RaceConfig() {
 
   useEffect(() => {
     if (config) {
-      setFormData(config)
+      const data = { ...config }
+      // Convert ISO date to datetime-local format for the input
+      if (data.raceDate) {
+        const d = new Date(data.raceDate)
+        if (!isNaN(d.getTime())) {
+          const pad = (n: number) => n.toString().padStart(2, '0')
+          data.raceDate = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
+        }
+      }
+      setFormData(data)
     }
   }, [config])
 
@@ -52,7 +61,12 @@ export default function RaceConfig() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    updateMutation.mutate(formData)
+    // Convert datetime-local value to full ISO string with timezone
+    const dataToSave = { ...formData }
+    if (dataToSave.raceDate && !dataToSave.raceDate.includes('Z') && !dataToSave.raceDate.includes('+')) {
+      dataToSave.raceDate = new Date(dataToSave.raceDate).toISOString()
+    }
+    updateMutation.mutate(dataToSave)
   }
 
   if (isLoading) {
