@@ -322,6 +322,7 @@ router.get('/runners/:runnerId', async (req, res) => {
     const legData = legs.map(leg => {
       const result = runner.legResults.find(r => r.legId === leg.id)
       return {
+        id: result?.id || null,
         legNumber: leg.legNumber,
         distance: leg.distance,
         clockTime: result?.clockTime || null,

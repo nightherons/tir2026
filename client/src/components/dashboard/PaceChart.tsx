@@ -94,9 +94,7 @@ export default function PaceChart({ standings, legs }: PaceChartProps) {
               <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
               <XAxis
                 dataKey="leg"
-                label={{ value: 'Leg', position: 'bottom', offset: 0 }}
                 tick={{ fontSize: 12 }}
-                height={40}
               />
               <YAxis
                 label={{

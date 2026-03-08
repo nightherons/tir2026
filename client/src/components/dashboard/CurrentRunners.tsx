@@ -107,7 +107,7 @@ export default function CurrentRunners({ standings }: CurrentRunnersProps) {
             <RunnerCard
               key={standing.team.id}
               standing={standing}
-              onClick={() => setSelectedRunnerId(standing.currentRunner?.id || null)}
+              onClick={() => setSelectedRunnerId(prev => prev === standing.currentRunner?.id ? null : standing.currentRunner?.id || null)}
             />
           ))}
           {/* Duplicate set for seamless looping */}
@@ -115,7 +115,7 @@ export default function CurrentRunners({ standings }: CurrentRunnersProps) {
             <RunnerCard
               key={`dup-${standing.team.id}`}
               standing={standing}
-              onClick={() => setSelectedRunnerId(standing.currentRunner?.id || null)}
+              onClick={() => setSelectedRunnerId(prev => prev === standing.currentRunner?.id ? null : standing.currentRunner?.id || null)}
             />
           ))}
         </div>

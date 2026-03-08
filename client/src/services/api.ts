@@ -105,6 +105,7 @@ export const adminApi = {
     clockTime: number
     kills: number
   }) => api.post('/admin/entry', data),
+  deleteTime: (id: string) => api.delete(`/admin/entry/${id}`),
 
   // Import/Export
   importData: (file: File) => {

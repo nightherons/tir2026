@@ -1,13 +1,23 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Clock, CheckCircle2, AlertCircle } from 'lucide-react'
-import { adminApi } from '../../services/api'
+import { Clock, CheckCircle2, AlertCircle, Trash2 } from 'lucide-react'
+import { adminApi, api } from '../../services/api'
 import type { Runner, Leg, Team } from '../../types'
 import { getRunnerLegNumbers } from '../../utils/legAssignments'
+import { formatTime } from '../../utils/time'
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card'
 import { Button } from '../ui/button'
 import { Input } from '../ui/input'
 import { cn } from '@/lib/utils'
+
+interface RunnerLegResult {
+  id: string
+  legNumber: number
+  distance: number
+  clockTime: number | null
+  kills: number
+  pace: number | null
+}
 
 export default function TimeEntryAdmin() {
   const queryClient = useQueryClient()
@@ -54,6 +64,27 @@ export default function TimeEntryAdmin() {
       })
     : []
 
+  // Fetch runner's existing leg results
+  const { data: runnerDetailData } = useQuery({
+    queryKey: ['runner-details', selectedRunner],
+    queryFn: async () => {
+      if (!selectedRunner) return null
+      const res = await api.get(`/dashboard/runners/${selectedRunner}`)
+      return res.data?.data as { legs: RunnerLegResult[] }
+    },
+    enabled: !!selectedRunner,
+  })
+
+  const enteredResults = runnerDetailData?.legs?.filter(l => l.clockTime != null) || []
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => adminApi.deleteTime(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['dashboard'] })
+      queryClient.invalidateQueries({ queryKey: ['runner-details', selectedRunner] })
+    },
+  })
+
   const submitMutation = useMutation({
     mutationFn: (data: {
       runnerId: string
@@ -63,6 +94,7 @@ export default function TimeEntryAdmin() {
     }) => adminApi.submitAnyTime(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['dashboard'] })
+      queryClient.invalidateQueries({ queryKey: ['runner-details', selectedRunner] })
       setSuccess(true)
       setHours('')
       setMinutes('')
@@ -190,6 +222,48 @@ export default function TimeEntryAdmin() {
                       </p>
                     </button>
                   ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Entered times for selected runner */}
+        {selectedRunner && enteredResults.length > 0 && (
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base">Entered Times</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                {enteredResults.map((result) => (
+                  <div
+                    key={result.legNumber}
+                    className="flex items-center justify-between p-2 rounded-lg bg-green-50 dark:bg-green-950/20 border"
+                  >
+                    <div className="flex items-center gap-3">
+                      <span className="font-semibold text-sm">Leg {result.legNumber}</span>
+                      <span className="text-sm font-mono">{formatTime(result.clockTime!)}</span>
+                      <span className="text-xs text-muted-foreground">{result.distance} mi</span>
+                      {result.kills > 0 && (
+                        <span className="text-xs text-amber-600">{result.kills} kills</span>
+                      )}
+                    </div>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/30"
+                      disabled={deleteMutation.isPending}
+                      onClick={() => {
+                        if (result.id && confirm(`Delete time for Leg ${result.legNumber}?`)) {
+                          deleteMutation.mutate(result.id)
+                        }
+                      }}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ))}
               </div>
             </CardContent>
           </Card>

@@ -302,6 +302,29 @@ router.post('/entry', async (req, res) => {
   }
 })
 
+router.delete('/entry/:id', async (req, res) => {
+  try {
+    const { id } = req.params
+
+    const result = await prisma.legResult.findUnique({
+      where: { id },
+    })
+
+    if (!result) {
+      return res.status(404).json({ success: false, error: 'Time entry not found' })
+    }
+
+    await prisma.legResult.delete({
+      where: { id },
+    })
+
+    res.json({ success: true })
+  } catch (error) {
+    console.error('Delete entry error:', error)
+    res.status(500).json({ success: false, error: 'Failed to delete time entry' })
+  }
+})
+
 // ==================== CONFIG ====================
 
 router.get('/config', async (req, res) => {
