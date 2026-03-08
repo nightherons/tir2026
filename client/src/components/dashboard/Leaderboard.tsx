@@ -1,6 +1,10 @@
-import { Trophy, TrendingUp, TrendingDown, Minus, Users } from 'lucide-react'
+import { useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
+import { Trophy, TrendingUp, TrendingDown, Minus, Users, ChevronDown } from 'lucide-react'
 import type { TeamStanding } from '../../types'
-import { formatPaceDiff } from '../../utils/time'
+import { dashboardApi } from '../../services/api'
+import { formatPaceDiff, formatTime, formatPace } from '../../utils/time'
+import { getRunnerLegNumbers } from '../../utils/legAssignments'
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card'
 import { Badge } from '../ui/badge'
 import { cn } from '@/lib/utils'
@@ -8,6 +12,23 @@ import { cn } from '@/lib/utils'
 interface LeaderboardProps {
   standings: TeamStanding[]
   totalMiles: number
+}
+
+interface LegResultData {
+  id: string
+  clockTime: number | null
+  kills: number
+  leg: { legNumber: number; distance: number }
+}
+
+interface RunnerData {
+  id: string
+  name: string
+  vanNumber: number
+  runOrder: number
+  projectedPace: number
+  legAssignments?: string | null
+  legResults: LegResultData[]
 }
 
 const teamColors: Record<string, { bg: string; text: string; border: string }> = {
@@ -19,8 +40,97 @@ const teamColors: Record<string, { bg: string; text: string; border: string }> =
   GREEN: { bg: 'bg-green-600', text: 'text-white', border: 'border-green-400' },
 }
 
+function TeamDetail({ teamId }: { teamId: string }) {
+  const { data, isLoading } = useQuery({
+    queryKey: ['teamDetail', teamId],
+    queryFn: async () => {
+      const res = await dashboardApi.getTeam(teamId)
+      return res.data?.data as { runners: RunnerData[] }
+    },
+  })
+
+  if (isLoading) {
+    return (
+      <div className="p-4 text-center text-sm text-muted-foreground">
+        Loading team data...
+      </div>
+    )
+  }
+
+  if (!data?.runners) return null
+
+  const van1 = data.runners.filter(r => r.vanNumber === 1).sort((a, b) => a.runOrder - b.runOrder)
+  const van2 = data.runners.filter(r => r.vanNumber === 2).sort((a, b) => a.runOrder - b.runOrder)
+
+  const renderRunners = (runners: RunnerData[], vanLabel: string) => (
+    <div>
+      <h5 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">{vanLabel}</h5>
+      <div className="space-y-1">
+        {runners.map(runner => {
+          const legNums = getRunnerLegNumbers(runner)
+          const totalKills = runner.legResults.reduce((sum, r) => sum + r.kills, 0)
+
+          return (
+            <div key={runner.id} className="text-sm border rounded-lg p-2 bg-background">
+              <div className="flex items-center justify-between mb-1">
+                <span className="font-medium">{runner.name}</span>
+                <span className="text-xs text-muted-foreground">
+                  Projected: {formatPace(runner.projectedPace)}
+                </span>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {legNums.map(legNum => {
+                  const result = runner.legResults.find(r => r.leg.legNumber === legNum)
+                  return (
+                    <div
+                      key={legNum}
+                      className={cn(
+                        "text-xs px-2 py-1 rounded font-mono",
+                        result?.clockTime
+                          ? "bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300"
+                          : "bg-muted text-muted-foreground"
+                      )}
+                    >
+                      <span className="font-semibold">L{legNum}</span>
+                      {result?.clockTime ? (
+                        <>
+                          {' '}{formatTime(result.clockTime)}
+                          {result.kills > 0 && (
+                            <span className="ml-1 text-amber-600 dark:text-amber-400">
+                              {result.kills}K
+                            </span>
+                          )}
+                        </>
+                      ) : (
+                        <span className="ml-1">--</span>
+                      )}
+                    </div>
+                  )
+                })}
+              </div>
+              {totalKills > 0 && (
+                <div className="text-xs text-amber-600 dark:text-amber-400 mt-1">
+                  Total kills: {totalKills}
+                </div>
+              )}
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
+
+  return (
+    <div className="mt-3 p-3 rounded-lg border bg-muted/30 grid grid-cols-1 md:grid-cols-2 gap-4">
+      {van1.length > 0 && renderRunners(van1, 'Van 1')}
+      {van2.length > 0 && renderRunners(van2, 'Van 2')}
+    </div>
+  )
+}
+
 export default function Leaderboard({ standings, totalMiles }: LeaderboardProps) {
   const sortedStandings = [...standings].sort((a, b) => a.rank - b.rank)
+  const [expandedTeam, setExpandedTeam] = useState<string | null>(null)
 
   return (
     <Card>
@@ -41,87 +151,99 @@ export default function Leaderboard({ standings, totalMiles }: LeaderboardProps)
         {sortedStandings.map((standing, index) => {
           const colors = teamColors[standing.team.name] || { bg: 'bg-gray-200', text: 'text-gray-900', border: 'border-gray-300' }
           const isLeader = index === 0
+          const isExpanded = expandedTeam === standing.team.id
 
           return (
-            <div
-              key={standing.team.id}
-              className={cn(
-                "flex items-center gap-4 p-4 rounded-xl transition-all duration-300",
-                isLeader
-                  ? "bg-gradient-to-r from-yellow-50 to-amber-50 dark:from-yellow-950/30 dark:to-amber-950/30 border-2 border-yellow-300 dark:border-yellow-700 shadow-md"
-                  : "bg-muted/50 hover:bg-muted"
-              )}
-            >
-              {/* Rank */}
-              <div className={cn(
-                "w-10 h-10 rounded-full flex items-center justify-center font-bold text-lg",
-                isLeader
-                  ? "bg-gradient-to-br from-yellow-400 to-amber-500 text-white shadow-lg"
-                  : "bg-muted-foreground/10 text-muted-foreground"
-              )}>
-                {standing.rank}
-              </div>
-
-              {/* Team badge */}
+            <div key={standing.team.id}>
               <div
+                onClick={() => setExpandedTeam(isExpanded ? null : standing.team.id)}
                 className={cn(
-                  "w-12 h-12 rounded-lg flex items-center justify-center font-bold text-sm shadow-sm border",
-                  colors.bg, colors.text, colors.border
+                  "flex items-center gap-4 p-4 rounded-xl transition-all duration-300 cursor-pointer",
+                  isLeader
+                    ? "bg-gradient-to-r from-yellow-50 to-amber-50 dark:from-yellow-950/30 dark:to-amber-950/30 border-2 border-yellow-300 dark:border-yellow-700 shadow-md"
+                    : "bg-muted/50 hover:bg-muted"
                 )}
               >
-                {standing.team.name.substring(0, 2)}
-              </div>
-
-              {/* Team info */}
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2">
-                  <span className="font-semibold text-foreground truncate">
-                    {standing.team.name}
-                  </span>
-                  <Badge variant="outline" className="text-xs">
-                    {standing.team.city}
-                  </Badge>
-                </div>
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <span>Leg {standing.completedLegs + 1}/36</span>
-                  {standing.currentRunner && (
-                    <>
-                      <span className="text-muted-foreground/50">•</span>
-                      <span className="flex items-center gap-1 text-primary">
-                        <Users className="h-3 w-3" />
-                        {standing.currentRunner.name}
-                      </span>
-                    </>
-                  )}
-                </div>
-              </div>
-
-              {/* Miles and projected finish */}
-              <div className="text-right">
-                <div className="font-mono font-semibold text-foreground">
-                  {standing.milesCompleted?.toFixed(1) || '0.0'}/{totalMiles.toFixed(1)} mi
-                </div>
-                {standing.projectedFinishTime ? (
-                  <div className="text-sm text-muted-foreground">
-                    <span>Projected Finish: {new Date(standing.projectedFinishTime).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}</span>
-                  </div>
-                ) : null}
+                {/* Rank */}
                 <div className={cn(
-                  "flex items-center justify-end gap-1 text-sm font-medium",
-                  standing.paceVsProjected < 0 ? "text-green-600 dark:text-green-400" :
-                  standing.paceVsProjected > 0 ? "text-red-600 dark:text-red-400" :
-                  "text-muted-foreground"
+                  "w-10 h-10 rounded-full flex items-center justify-center font-bold text-lg",
+                  isLeader
+                    ? "bg-gradient-to-br from-yellow-400 to-amber-500 text-white shadow-lg"
+                    : "bg-muted-foreground/10 text-muted-foreground"
                 )}>
-                  {standing.paceVsProjected < 0 ? (
-                    <TrendingUp className="h-3 w-3" />
-                  ) : standing.paceVsProjected > 0 ? (
-                    <TrendingDown className="h-3 w-3" />
-                  ) : (
-                    <Minus className="h-3 w-3" />
-                  )}
-                  {formatPaceDiff(standing.paceVsProjected)}
+                  {standing.rank}
                 </div>
+
+                {/* Team badge */}
+                <div
+                  className={cn(
+                    "w-12 h-12 rounded-lg flex items-center justify-center font-bold text-sm shadow-sm border",
+                    colors.bg, colors.text, colors.border
+                  )}
+                >
+                  {standing.team.name.substring(0, 2)}
+                </div>
+
+                {/* Team info */}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <span className="font-semibold text-foreground truncate">
+                      {standing.team.name}
+                    </span>
+                    <Badge variant="outline" className="text-xs">
+                      {standing.team.city}
+                    </Badge>
+                  </div>
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <span>Leg {standing.completedLegs + 1}/36</span>
+                    {standing.currentRunner && (
+                      <>
+                        <span className="text-muted-foreground/50">•</span>
+                        <span className="flex items-center gap-1 text-primary">
+                          <Users className="h-3 w-3" />
+                          {standing.currentRunner.name}
+                        </span>
+                      </>
+                    )}
+                  </div>
+                </div>
+
+                {/* Miles and projected finish */}
+                <div className="text-right">
+                  <div className="font-mono font-semibold text-foreground">
+                    {standing.milesCompleted?.toFixed(1) || '0.0'}/{totalMiles.toFixed(1)} mi
+                  </div>
+                  {standing.projectedFinishTime ? (
+                    <div className="text-sm text-muted-foreground">
+                      <span>Projected Finish: {new Date(standing.projectedFinishTime).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}</span>
+                    </div>
+                  ) : null}
+                  <div className={cn(
+                    "flex items-center justify-end gap-1 text-sm font-medium",
+                    standing.paceVsProjected < 0 ? "text-green-600 dark:text-green-400" :
+                    standing.paceVsProjected > 0 ? "text-red-600 dark:text-red-400" :
+                    "text-muted-foreground"
+                  )}>
+                    {standing.paceVsProjected < 0 ? (
+                      <TrendingUp className="h-3 w-3" />
+                    ) : standing.paceVsProjected > 0 ? (
+                      <TrendingDown className="h-3 w-3" />
+                    ) : (
+                      <Minus className="h-3 w-3" />
+                    )}
+                    {formatPaceDiff(standing.paceVsProjected)}
+                  </div>
+                </div>
+
+                {/* Expand indicator */}
+                <ChevronDown className={cn(
+                  "h-4 w-4 text-muted-foreground transition-transform",
+                  isExpanded && "rotate-180"
+                )} />
               </div>
+
+              {/* Expanded team detail */}
+              {isExpanded && <TeamDetail teamId={standing.team.id} />}
             </div>
           )
         })}

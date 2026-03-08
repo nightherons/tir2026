@@ -36,9 +36,9 @@ export function formatPaceDiff(diffSeconds: number): string {
   const formatted = formatTime(absSeconds)
 
   if (diffSeconds < 0) {
-    return `${formatted} under pace`
+    return `${formatted} ahead of pace`
   }
-  return `${formatted} over pace`
+  return `${formatted} behind pace`
 }
 
 /**
