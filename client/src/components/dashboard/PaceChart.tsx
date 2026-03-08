@@ -8,11 +8,14 @@ import {
   Tooltip,
   Legend,
   ResponsiveContainer,
+  ReferenceLine,
 } from 'recharts'
-import type { TeamStanding } from '../../types'
+import type { TeamStanding, Leg } from '../../types'
+import { Card, CardContent, CardHeader, CardTitle } from '../ui/card'
 
 interface PaceChartProps {
   standings: TeamStanding[]
+  legs: Leg[]
 }
 
 const teamChartColors: Record<string, string> = {
@@ -24,87 +27,122 @@ const teamChartColors: Record<string, string> = {
   GREEN: '#16a34a',
 }
 
-export default function PaceChart({ standings }: PaceChartProps) {
-  // This would normally come from historical data via API
-  // For now, we'll show a placeholder
-  const hasData = standings.length > 0 && standings.some((s) => s.completedLegs > 0)
-
-  const chartData = useMemo(() => {
-    // Generate sample data based on completed legs
-    // In production, this would come from the API with actual pace data per leg
-    const data = []
-    const maxLegs = Math.max(...standings.map((s) => s.completedLegs), 1)
-
-    for (let leg = 1; leg <= maxLegs; leg++) {
-      const point: Record<string, unknown> = { leg }
-      standings.forEach((standing) => {
-        // Simulated pace data - in production, get actual per-leg data
-        if (standing.completedLegs >= leg) {
-          // Random variation around 7 min/mile pace
-          point[standing.team.name] = 7 + (Math.random() - 0.5)
-        }
-      })
-      data.push(point)
+export default function PaceChart({ standings, legs }: PaceChartProps) {
+  const legDistances = useMemo(() => {
+    const map = new Map<number, number>()
+    for (const leg of legs) {
+      map.set(leg.legNumber, leg.distance)
     }
+    return map
+  }, [legs])
 
-    return data
+  // Determine max completed leg across all teams (only show actual data)
+  const maxCompletedLeg = useMemo(() => {
+    return Math.max(...standings.map(s => s.completedLegs), 0)
   }, [standings])
 
-  if (!hasData) {
+  const chartData = useMemo(() => {
+    if (maxCompletedLeg === 0) return []
+
+    const data = []
+    for (let leg = 1; leg <= maxCompletedLeg; leg++) {
+      const point: Record<string, unknown> = { leg }
+      for (const standing of standings) {
+        if (standing.legTimings && standing.legTimings.length >= leg) {
+          const timeSeconds = standing.legTimings[leg - 1]
+          const distance = legDistances.get(leg) || 5
+          // Only include if this leg is completed for this team
+          if (leg <= standing.completedLegs) {
+            const paceMinPerMile = (timeSeconds / distance) / 60
+            point[standing.team.name] = Math.round(paceMinPerMile * 100) / 100
+          }
+        }
+      }
+      data.push(point)
+    }
+    return data
+  }, [standings, legDistances, maxCompletedLeg])
+
+  if (maxCompletedLeg === 0) {
     return (
-      <div className="card">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Pace Over Time</h3>
-        <div className="h-64 flex items-center justify-center text-gray-500">
-          Pace chart will appear as race progresses
-        </div>
-      </div>
+      <Card>
+        <CardHeader>
+          <CardTitle>Pace Over Time</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="h-64 flex items-center justify-center text-muted-foreground">
+            Pace chart will appear as race progresses
+          </div>
+        </CardContent>
+      </Card>
     )
   }
 
-  return (
-    <div className="card">
-      <h3 className="text-lg font-semibold text-gray-900 mb-4">Pace Over Time</h3>
-      <p className="text-sm text-gray-500 mb-4">Average pace (min/mile) by leg</p>
+  // Van transitions happen at legs 6→7, 12→13, 18→19, 24→25, 30→31
+  const vanTransitions = [6.5, 12.5, 18.5, 24.5, 30.5].filter(v => v <= maxCompletedLeg)
 
-      <div className="h-64">
-        <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={chartData}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-            <XAxis
-              dataKey="leg"
-              label={{ value: 'Leg', position: 'bottom', offset: -5 }}
-              tick={{ fontSize: 12 }}
-            />
-            <YAxis
-              label={{
-                value: 'Pace (min/mi)',
-                angle: -90,
-                position: 'insideLeft',
-                style: { textAnchor: 'middle' },
-              }}
-              domain={['auto', 'auto']}
-              tick={{ fontSize: 12 }}
-              tickFormatter={(value) => value.toFixed(1)}
-            />
-            <Tooltip
-              formatter={(value: number) => [`${value.toFixed(2)} min/mi`, '']}
-              labelFormatter={(label) => `Leg ${label}`}
-            />
-            <Legend />
-            {standings.map((standing) => (
-              <Line
-                key={standing.team.id}
-                type="monotone"
-                dataKey={standing.team.name}
-                stroke={teamChartColors[standing.team.name] || '#9ca3af'}
-                strokeWidth={2}
-                dot={{ r: 3 }}
-                activeDot={{ r: 5 }}
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Pace Over Time</CardTitle>
+        <p className="text-sm text-muted-foreground">Actual pace (min/mile) by completed leg</p>
+      </CardHeader>
+      <CardContent>
+        <div className="h-72">
+          <ResponsiveContainer width="100%" height="100%">
+            <LineChart data={chartData}>
+              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+              <XAxis
+                dataKey="leg"
+                label={{ value: 'Leg', position: 'bottom', offset: 0 }}
+                tick={{ fontSize: 12 }}
+                height={40}
               />
-            ))}
-          </LineChart>
-        </ResponsiveContainer>
-      </div>
-    </div>
+              <YAxis
+                label={{
+                  value: 'Pace (min/mi)',
+                  angle: -90,
+                  position: 'insideLeft',
+                  style: { textAnchor: 'middle' },
+                }}
+                domain={['auto', 'auto']}
+                tick={{ fontSize: 12 }}
+                tickFormatter={(value) => value.toFixed(1)}
+                reversed
+              />
+              <Tooltip
+                formatter={(value: number, name: string) => [
+                  `${Math.floor(value)}:${Math.round((value % 1) * 60).toString().padStart(2, '0')}/mi`,
+                  name,
+                ]}
+                labelFormatter={(label) => `Leg ${label}`}
+              />
+              <Legend wrapperStyle={{ paddingTop: 12 }} />
+              {vanTransitions.map(v => (
+                <ReferenceLine
+                  key={v}
+                  x={v}
+                  stroke="hsl(var(--muted-foreground))"
+                  strokeDasharray="3 3"
+                  strokeOpacity={0.4}
+                />
+              ))}
+              {standings.map((standing) => (
+                <Line
+                  key={standing.team.id}
+                  type="monotone"
+                  dataKey={standing.team.name}
+                  stroke={teamChartColors[standing.team.name] || '#9ca3af'}
+                  strokeWidth={2}
+                  dot={{ r: 3 }}
+                  activeDot={{ r: 5 }}
+                  connectNulls
+                />
+              ))}
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
+      </CardContent>
+    </Card>
   )
 }

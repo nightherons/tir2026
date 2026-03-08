@@ -147,6 +147,7 @@ function TeamDetail({ teamId }: { teamId: string }) {
 export default function Leaderboard({ standings, totalMiles }: LeaderboardProps) {
   const sortedStandings = [...standings].sort((a, b) => a.rank - b.rank)
   const [expandedTeam, setExpandedTeam] = useState<string | null>(null)
+  const [directRunnerId, setDirectRunnerId] = useState<string | null>(null)
 
   return (
     <Card>
@@ -172,7 +173,15 @@ export default function Leaderboard({ standings, totalMiles }: LeaderboardProps)
           return (
             <div key={standing.team.id}>
               <div
-                onClick={() => setExpandedTeam(isExpanded ? null : standing.team.id)}
+                onClick={() => {
+                  if (isExpanded) {
+                    setExpandedTeam(null)
+                    setDirectRunnerId(null)
+                  } else {
+                    setExpandedTeam(standing.team.id)
+                    setDirectRunnerId(null)
+                  }
+                }}
                 className={cn(
                   "flex items-center gap-4 p-4 rounded-xl transition-all duration-300 cursor-pointer",
                   isLeader
@@ -215,10 +224,25 @@ export default function Leaderboard({ standings, totalMiles }: LeaderboardProps)
                     {standing.currentRunner && (
                       <>
                         <span className="text-muted-foreground/50">•</span>
-                        <span className="flex items-center gap-1 text-primary">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            const runnerId = standing.currentRunner?.id
+                            if (runnerId) {
+                              if (expandedTeam === standing.team.id && directRunnerId === runnerId) {
+                                setExpandedTeam(null)
+                                setDirectRunnerId(null)
+                              } else {
+                                setExpandedTeam(standing.team.id)
+                                setDirectRunnerId(runnerId)
+                              }
+                            }
+                          }}
+                          className="flex items-center gap-1 text-primary hover:underline"
+                        >
                           <Users className="h-3 w-3" />
                           {standing.currentRunner.name}
-                        </span>
+                        </button>
                       </>
                     )}
                   </div>
@@ -258,8 +282,16 @@ export default function Leaderboard({ standings, totalMiles }: LeaderboardProps)
                 )} />
               </div>
 
-              {/* Expanded team detail */}
-              {isExpanded && <TeamDetail teamId={standing.team.id} />}
+              {/* Expanded team detail or direct runner detail */}
+              {isExpanded && (
+                directRunnerId ? (
+                  <div className="mt-3 p-3 rounded-lg border bg-muted/30">
+                    <RunnerDetail runnerId={directRunnerId} onClose={() => { setExpandedTeam(null); setDirectRunnerId(null) }} />
+                  </div>
+                ) : (
+                  <TeamDetail teamId={standing.team.id} />
+                )
+              )}
             </div>
           )
         })}
