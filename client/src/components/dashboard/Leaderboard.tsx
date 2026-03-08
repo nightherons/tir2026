@@ -8,6 +8,7 @@ import { getRunnerLegNumbers } from '../../utils/legAssignments'
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card'
 import { Badge } from '../ui/badge'
 import { cn } from '@/lib/utils'
+import RunnerDetail from './RunnerDetail'
 
 interface LeaderboardProps {
   standings: TeamStanding[]
@@ -41,6 +42,8 @@ const teamColors: Record<string, { bg: string; text: string; border: string }> =
 }
 
 function TeamDetail({ teamId }: { teamId: string }) {
+  const [selectedRunnerId, setSelectedRunnerId] = useState<string | null>(null)
+
   const { data, isLoading } = useQuery({
     queryKey: ['teamDetail', teamId],
     queryFn: async () => {
@@ -59,6 +62,15 @@ function TeamDetail({ teamId }: { teamId: string }) {
 
   if (!data?.runners) return null
 
+  // If a runner is selected, show their full detail view
+  if (selectedRunnerId) {
+    return (
+      <div className="mt-3 p-3 rounded-lg border bg-muted/30">
+        <RunnerDetail runnerId={selectedRunnerId} onClose={() => setSelectedRunnerId(null)} />
+      </div>
+    )
+  }
+
   const van1 = data.runners.filter(r => r.vanNumber === 1).sort((a, b) => a.runOrder - b.runOrder)
   const van2 = data.runners.filter(r => r.vanNumber === 2).sort((a, b) => a.runOrder - b.runOrder)
 
@@ -71,9 +83,13 @@ function TeamDetail({ teamId }: { teamId: string }) {
           const totalKills = runner.legResults.reduce((sum, r) => sum + r.kills, 0)
 
           return (
-            <div key={runner.id} className="text-sm border rounded-lg p-2 bg-background">
+            <div
+              key={runner.id}
+              onClick={() => setSelectedRunnerId(runner.id)}
+              className="text-sm border rounded-lg p-2 bg-background cursor-pointer hover:bg-muted/50 transition-colors"
+            >
               <div className="flex items-center justify-between mb-1">
-                <span className="font-medium">{runner.name}</span>
+                <span className="font-medium text-primary">{runner.name}</span>
                 <span className="text-xs text-muted-foreground">
                   Projected: {formatPace(runner.projectedPace)}
                 </span>

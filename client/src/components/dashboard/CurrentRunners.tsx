@@ -1,5 +1,7 @@
+import { useState } from 'react'
 import { Activity } from 'lucide-react'
 import type { TeamStanding } from '../../types'
+import RunnerDetail from './RunnerDetail'
 
 interface CurrentRunnersProps {
   standings: TeamStanding[]
@@ -24,14 +26,15 @@ function darkenColor(hexColor: string, amount: number = 0.2): string {
   return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`
 }
 
-function RunnerCard({ standing }: { standing: TeamStanding }) {
+function RunnerCard({ standing, onClick }: { standing: TeamStanding; onClick: () => void }) {
   const teamColor = standing.team.color || '#3b82f6'
   const isLight = isLightColor(teamColor)
   const borderColor = darkenColor(teamColor, 0.2)
 
   return (
     <div
-      className="flex items-center gap-3 px-4 py-2 rounded-lg border-2 shadow-sm min-w-[200px] flex-shrink-0"
+      onClick={onClick}
+      className="flex items-center gap-3 px-4 py-2 rounded-lg border-2 shadow-sm min-w-[200px] flex-shrink-0 cursor-pointer hover:opacity-90 transition-opacity"
       style={{
         backgroundColor: teamColor,
         borderColor: borderColor,
@@ -62,6 +65,7 @@ function RunnerCard({ standing }: { standing: TeamStanding }) {
 }
 
 export default function CurrentRunners({ standings }: CurrentRunnersProps) {
+  const [selectedRunnerId, setSelectedRunnerId] = useState<string | null>(null)
   const activeTeams = standings.filter((s) => s.currentRunner)
 
   if (activeTeams.length === 0) {
@@ -100,14 +104,29 @@ export default function CurrentRunners({ standings }: CurrentRunnersProps) {
         >
           {/* First set of cards */}
           {activeTeams.map((standing) => (
-            <RunnerCard key={standing.team.id} standing={standing} />
+            <RunnerCard
+              key={standing.team.id}
+              standing={standing}
+              onClick={() => setSelectedRunnerId(standing.currentRunner?.id || null)}
+            />
           ))}
           {/* Duplicate set for seamless looping */}
           {activeTeams.map((standing) => (
-            <RunnerCard key={`dup-${standing.team.id}`} standing={standing} />
+            <RunnerCard
+              key={`dup-${standing.team.id}`}
+              standing={standing}
+              onClick={() => setSelectedRunnerId(standing.currentRunner?.id || null)}
+            />
           ))}
         </div>
       </div>
+
+      {/* Runner detail panel */}
+      {selectedRunnerId && (
+        <div className="p-4 border-t">
+          <RunnerDetail runnerId={selectedRunnerId} onClose={() => setSelectedRunnerId(null)} />
+        </div>
+      )}
 
       {/* CSS for ticker animation */}
       <style>{`
