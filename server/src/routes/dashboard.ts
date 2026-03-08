@@ -110,25 +110,35 @@ router.get('/', async (req, res) => {
       // Get current runner based on calculated current leg
       const currentRunner = runnerByLeg.get(currentLeg) || null
 
-      // Calculate total time: actual entries + projected elapsed for current leg
+      // Calculate effective total time using elapsed since race start
       let effectiveTotalTime = totalTime
       if (raceStartTime) {
         const raceStart = new Date(raceStartTime).getTime()
         const elapsed = (Date.now() - raceStart) / 1000
-        if (elapsed > 0 && currentLeg > completedLegs) {
-          // Add projected times for legs between last actual and current projected leg
-          let projectedSum = 0
-          for (let i = completedLegs; i < currentLeg - 1; i++) {
-            projectedSum += legTimings[i]
-          }
-          // Add partial time for the leg in progress
-          let cumulativeToCurrentLeg = 0
-          for (let i = 0; i < currentLeg - 1; i++) {
-            cumulativeToCurrentLeg += legTimings[i]
-          }
-          const timeIntoCurrentLeg = Math.max(0, elapsed - cumulativeToCurrentLeg)
-          effectiveTotalTime = totalTime + projectedSum + timeIntoCurrentLeg
+        if (elapsed > 0) {
+          // Effective time = elapsed time from race start
+          // This is the same for all teams as a baseline, but teams with
+          // faster actual times will have updated legTimings that shift
+          // their currentLeg further ahead
+          effectiveTotalTime = Math.max(totalTime, elapsed)
         }
+      }
+
+      // Calculate pace vs projected: compare actual results against projected times
+      // for completed legs (legs with actual time entries)
+      let paceVsProjected = 0
+      if (allResults.length > 0) {
+        let projectedForCompletedLegs = 0
+        for (const result of allResults) {
+          if (result.leg) {
+            const runner = runnerByLeg.get(result.leg.legNumber)
+            const pace = runner?.projectedPace || DEFAULT_PACE
+            const leg = legsByNumber.get(result.leg.legNumber)
+            const distance = leg?.distance || 5
+            projectedForCompletedLegs += pace * distance
+          }
+        }
+        paceVsProjected = totalTime - projectedForCompletedLegs
       }
 
       return {
@@ -145,35 +155,24 @@ router.get('/', async (req, res) => {
         currentRunner: currentRunner
           ? { id: currentRunner.id, name: currentRunner.name }
           : null,
-        paceVsProjected: 0,
+        paceVsProjected,
         totalKills,
         rank: 0,
         legTimings,
       }
     })
 
-    // Sort by total time and assign ranks
+    // Sort by current leg (further ahead = better), then total time
     standings.sort((a, b) => {
-      if (a.completedLegs !== b.completedLegs) {
-        return b.completedLegs - a.completedLegs // More legs = better
+      if (a.currentLeg !== b.currentLeg) {
+        return b.currentLeg - a.currentLeg
       }
-      return a.totalTime - b.totalTime // Same legs, less time = better
+      return a.totalTime - b.totalTime
     })
 
     standings.forEach((s, index) => {
       s.rank = index + 1
     })
-
-    // Calculate pace vs projected for each team
-    if (standings.length > 0 && standings[0].completedLegs > 0) {
-      const leader = standings[0]
-      standings.forEach((s) => {
-        if (s.completedLegs > 0) {
-          // Simple: behind leader by time difference
-          s.paceVsProjected = s.totalTime - leader.totalTime
-        }
-      })
-    }
 
     res.json({
       success: true,
