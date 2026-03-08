@@ -4,9 +4,10 @@
 export function formatTime(totalSeconds: number): string {
   if (totalSeconds <= 0) return '00:00:00'
 
-  const hours = Math.floor(totalSeconds / 3600)
-  const minutes = Math.floor((totalSeconds % 3600) / 60)
-  const seconds = totalSeconds % 60
+  const total = Math.floor(totalSeconds)
+  const hours = Math.floor(total / 3600)
+  const minutes = Math.floor((total % 3600) / 60)
+  const seconds = total % 60
 
   if (hours > 0) {
     return `${hours.toString().padStart(2, '0')}:${minutes
