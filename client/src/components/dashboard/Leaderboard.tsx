@@ -29,9 +29,11 @@ export default function Leaderboard({ standings }: LeaderboardProps) {
             <Trophy className="h-5 w-5 text-yellow-500" />
             Team Standings
           </CardTitle>
-          <Badge variant="secondary" className="font-mono">
-            {standings.reduce((acc, s) => acc + s.completedLegs, 0)} legs
-          </Badge>
+          {sortedStandings.length > 0 && (
+            <Badge variant="secondary" className="font-mono">
+              Leg {sortedStandings[0].currentLeg}/36
+            </Badge>
+          )}
         </div>
       </CardHeader>
       <CardContent className="space-y-3">
