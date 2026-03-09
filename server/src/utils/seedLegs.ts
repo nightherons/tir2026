@@ -40,24 +40,19 @@ const legData = [
 ]
 
 export async function seedLegs(prisma: PrismaClient) {
+  const existingCount = await prisma.leg.count()
+  if (existingCount > 0) {
+    console.log(`Legs table already has ${existingCount} entries, skipping seed`)
+    return
+  }
+
   for (let i = 0; i < legData.length; i++) {
     const legNumber = i + 1
     const leg = legData[i]
     const difficulty = leg.distance > 6 ? 'hard' : leg.distance < 4 ? 'easy' : 'moderate'
 
-    await prisma.leg.upsert({
-      where: { legNumber },
-      update: {
-        distance: leg.distance,
-        difficulty,
-        startPoint: leg.startPoint,
-        endPoint: leg.endPoint,
-        startLat: leg.start[0],
-        startLng: leg.start[1],
-        endLat: leg.end[0],
-        endLng: leg.end[1],
-      },
-      create: {
+    await prisma.leg.create({
+      data: {
         legNumber,
         distance: leg.distance,
         difficulty,
