@@ -52,7 +52,7 @@ export default function MainLayout() {
               )} />
             </div>
 
-            {/* Entry link */}
+            {/* Entry link - always visible */}
             <Button variant="ghost" size="sm" asChild>
               <Link to="/entry" className="gap-2">
                 <Timer className="h-4 w-4" />
@@ -60,27 +60,38 @@ export default function MainLayout() {
               </Link>
             </Button>
 
-            {/* Auth links */}
-            {userType === 'admin' && (
+            {/* Auth-dependent links */}
+            {userType ? (
+              <>
+                {userType === 'admin' && (
+                  <Button variant="ghost" size="sm" asChild>
+                    <Link to="/admin" className="gap-2">
+                      <Settings className="h-4 w-4" />
+                      <span className="hidden sm:inline">Admin</span>
+                    </Link>
+                  </Button>
+                )}
+                {userType === 'captain' && (
+                  <Button variant="ghost" size="sm" asChild>
+                    <Link to="/captain" className="gap-2">
+                      <ClipboardList className="h-4 w-4" />
+                      <span className="hidden sm:inline">Van Entry</span>
+                    </Link>
+                  </Button>
+                )}
+                <Button variant="ghost" size="sm" onClick={logout} className="gap-2">
+                  <LogOut className="h-4 w-4" />
+                  <span className="hidden sm:inline">Logout</span>
+                </Button>
+              </>
+            ) : (
               <Button variant="ghost" size="sm" asChild>
-                <Link to="/admin" className="gap-2">
-                  <Settings className="h-4 w-4" />
-                  <span className="hidden sm:inline">Admin</span>
+                <Link to="/" className="gap-2">
+                  <LogOut className="h-4 w-4" />
+                  <span className="hidden sm:inline">Home</span>
                 </Link>
               </Button>
             )}
-            {userType === 'captain' && (
-              <Button variant="ghost" size="sm" asChild>
-                <Link to="/captain" className="gap-2">
-                  <ClipboardList className="h-4 w-4" />
-                  <span className="hidden sm:inline">Van Entry</span>
-                </Link>
-              </Button>
-            )}
-            <Button variant="ghost" size="sm" onClick={logout} className="gap-2">
-              <LogOut className="h-4 w-4" />
-              <span className="hidden sm:inline">Logout</span>
-            </Button>
           </nav>
         </div>
       </header>

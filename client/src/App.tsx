@@ -29,27 +29,13 @@ function App() {
       {/* Landing page - public */}
       <Route path="/" element={<Landing />} />
 
-      {/* Dashboard - requires admin auth */}
-      <Route
-        path="/dashboard"
-        element={
-          <ProtectedRoute requiredRole="admin">
-            <MainLayout />
-          </ProtectedRoute>
-        }
-      >
+      {/* Dashboard - public */}
+      <Route path="/dashboard" element={<MainLayout />}>
         <Route index element={<Dashboard />} />
       </Route>
 
-      {/* Runner time entry - requires admin auth for now */}
-      <Route
-        path="/entry"
-        element={
-          <ProtectedRoute requiredRole="admin">
-            <RunnerEntry />
-          </ProtectedRoute>
-        }
-      />
+      {/* Runner time entry - PIN protected in component */}
+      <Route path="/entry" element={<RunnerEntry />} />
 
       {/* Captain entry - requires captain auth */}
       <Route

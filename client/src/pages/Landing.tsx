@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
-import { LogIn } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
+import { LogIn, Radio } from 'lucide-react'
 import LoginModal from '../components/LoginModal'
 
 // Race date: March 28, 2026
@@ -61,6 +62,7 @@ function CountdownTimer() {
 
 export default function Landing() {
   const [showLoginModal, setShowLoginModal] = useState(false)
+  const navigate = useNavigate()
 
   return (
     <div className="relative min-h-screen overflow-hidden bg-black">
@@ -100,14 +102,23 @@ export default function Landing() {
         {/* Countdown Timer */}
         <CountdownTimer />
 
-        {/* Login Button */}
-        <button
-          onClick={() => setShowLoginModal(true)}
-          className="mt-12 flex items-center gap-2 bg-white/10 hover:bg-white/20 backdrop-blur-sm text-white px-6 py-3 rounded-lg border border-white/30 transition-all hover:scale-105"
-        >
-          <LogIn className="w-5 h-5" />
-          <span className="font-medium">Admin Login</span>
-        </button>
+        {/* Action Buttons */}
+        <div className="mt-12 flex flex-col sm:flex-row items-center gap-4">
+          <button
+            onClick={() => navigate('/dashboard')}
+            className="flex items-center gap-2 bg-white/20 hover:bg-white/30 backdrop-blur-sm text-white px-8 py-3 rounded-lg border border-white/30 transition-all hover:scale-105"
+          >
+            <Radio className="w-5 h-5" />
+            <span className="font-medium">Live Dashboard</span>
+          </button>
+          <button
+            onClick={() => setShowLoginModal(true)}
+            className="flex items-center gap-2 bg-white/10 hover:bg-white/20 backdrop-blur-sm text-white/70 px-6 py-3 rounded-lg border border-white/20 transition-all hover:scale-105"
+          >
+            <LogIn className="w-5 h-5" />
+            <span className="font-medium">Admin Login</span>
+          </button>
+        </div>
       </div>
 
       {/* Login Modal */}
