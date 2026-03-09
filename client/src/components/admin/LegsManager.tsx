@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import React, { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Plus, Pencil, Trash2, Route } from 'lucide-react'
 import { adminApi } from '../../services/api'
@@ -136,45 +136,115 @@ export default function LegsManager() {
               {runLegs
                 .sort((a, b) => a.legNumber - b.legNumber)
                 .map((leg) => (
-                  <tr key={leg.id} className="group">
-                    <td className="py-3 font-medium">{leg.legNumber}</td>
-                    <td className="py-3 font-mono">{leg.distance} mi</td>
-                    <td className="py-3 text-muted-foreground hidden sm:table-cell">{leg.startPoint || '-'}</td>
-                    <td className="py-3 text-muted-foreground hidden sm:table-cell">{leg.endPoint || '-'}</td>
-                    <td className="py-3 hidden md:table-cell">{leg.elevation ? `${leg.elevation} ft` : '-'}</td>
-                    <td className="py-3">
-                      <Badge
-                        variant={
-                          leg.difficulty === 'easy'
-                            ? 'success'
-                            : leg.difficulty === 'hard'
-                            ? 'destructive'
-                            : 'warning'
-                        }
-                      >
-                        {leg.difficulty || 'moderate'}
-                      </Badge>
-                    </td>
-                    <td className="py-3 text-right">
-                      <div className="flex justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <Button size="icon" variant="ghost" onClick={() => startEdit(leg)}>
-                          <Pencil className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          size="icon"
-                          variant="ghost"
-                          className="text-destructive hover:text-destructive"
-                          onClick={() => {
-                            if (confirm('Delete this leg?')) {
-                              deleteMutation.mutate(leg.id)
-                            }
-                          }}
+                  <React.Fragment key={leg.id}>
+                    <tr className="group">
+                      <td className="py-3 font-medium">{leg.legNumber}</td>
+                      <td className="py-3 font-mono">{leg.distance} mi</td>
+                      <td className="py-3 text-muted-foreground hidden sm:table-cell">{leg.startPoint || '-'}</td>
+                      <td className="py-3 text-muted-foreground hidden sm:table-cell">{leg.endPoint || '-'}</td>
+                      <td className="py-3 hidden md:table-cell">{leg.elevation ? `${leg.elevation} ft` : '-'}</td>
+                      <td className="py-3">
+                        <Badge
+                          variant={
+                            leg.difficulty === 'easy'
+                              ? 'success'
+                              : leg.difficulty === 'hard'
+                              ? 'destructive'
+                              : 'warning'
+                          }
                         >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </td>
-                  </tr>
+                          {leg.difficulty || 'moderate'}
+                        </Badge>
+                      </td>
+                      <td className="py-3 text-right">
+                        <div className="flex justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <Button size="icon" variant="ghost" onClick={() => startEdit(leg)}>
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            className="text-destructive hover:text-destructive"
+                            onClick={() => {
+                              if (confirm('Delete this leg?')) {
+                                deleteMutation.mutate(leg.id)
+                              }
+                            }}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </td>
+                    </tr>
+                    {editingId === leg.id && (
+                      <tr>
+                        <td colSpan={7} className="py-3">
+                          <form onSubmit={handleSubmit} className="space-y-4 p-4 bg-muted/50 rounded-lg border">
+                            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
+                              <div className="space-y-2">
+                                <label className="text-sm font-medium">Leg #</label>
+                                <Input
+                                  type="number" min="1" max="36"
+                                  value={formData.legNumber}
+                                  onChange={(e) => setFormData({ ...formData, legNumber: parseInt(e.target.value) })}
+                                  required
+                                />
+                              </div>
+                              <div className="space-y-2">
+                                <label className="text-sm font-medium">Distance (mi)</label>
+                                <Input
+                                  type="number" step="0.01" min="0.1" max="20"
+                                  value={formData.distance}
+                                  onChange={(e) => setFormData({ ...formData, distance: parseFloat(e.target.value) })}
+                                  required
+                                />
+                              </div>
+                              <div className="space-y-2">
+                                <label className="text-sm font-medium">Elevation (ft)</label>
+                                <Input
+                                  type="number" min="0"
+                                  value={formData.elevation}
+                                  onChange={(e) => setFormData({ ...formData, elevation: parseInt(e.target.value) })}
+                                />
+                              </div>
+                              <div className="space-y-2">
+                                <label className="text-sm font-medium">Difficulty</label>
+                                <select
+                                  value={formData.difficulty}
+                                  onChange={(e) => setFormData({ ...formData, difficulty: e.target.value as 'easy' | 'moderate' | 'hard' })}
+                                  className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                                >
+                                  <option value="easy">Easy</option>
+                                  <option value="moderate">Moderate</option>
+                                  <option value="hard">Hard</option>
+                                </select>
+                              </div>
+                              <div className="space-y-2">
+                                <label className="text-sm font-medium">Start Point</label>
+                                <Input
+                                  value={formData.startPoint}
+                                  onChange={(e) => setFormData({ ...formData, startPoint: e.target.value })}
+                                  placeholder="Exchange 1"
+                                />
+                              </div>
+                              <div className="space-y-2">
+                                <label className="text-sm font-medium">End Point</label>
+                                <Input
+                                  value={formData.endPoint}
+                                  onChange={(e) => setFormData({ ...formData, endPoint: e.target.value })}
+                                  placeholder="Exchange 2"
+                                />
+                              </div>
+                            </div>
+                            <div className="flex justify-end gap-3">
+                              <Button type="button" variant="outline" size="sm" onClick={cancelEdit}>Cancel</Button>
+                              <Button type="submit" size="sm" disabled={updateMutation.isPending}>Update</Button>
+                            </div>
+                          </form>
+                        </td>
+                      </tr>
+                    )}
+                  </React.Fragment>
                 ))}
             </tbody>
           </table>
@@ -200,11 +270,11 @@ export default function LegsManager() {
         )}
       </div>
 
-      {/* Add/Edit form */}
-      {(isAdding || editingId) && (
+      {/* Add form (top-level, only for new legs) */}
+      {isAdding && (
         <Card>
           <CardHeader>
-            <CardTitle>{editingId ? 'Edit Leg' : 'Add New Leg'}</CardTitle>
+            <CardTitle>Add New Leg</CardTitle>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
@@ -284,9 +354,9 @@ export default function LegsManager() {
                 </Button>
                 <Button
                   type="submit"
-                  disabled={createMutation.isPending || updateMutation.isPending}
+                  disabled={createMutation.isPending}
                 >
-                  {editingId ? 'Update' : 'Create'}
+                  Create
                 </Button>
               </div>
             </form>

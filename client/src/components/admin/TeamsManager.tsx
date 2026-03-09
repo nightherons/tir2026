@@ -109,11 +109,11 @@ export default function TeamsManager() {
         )}
       </div>
 
-      {/* Add/Edit form */}
-      {(isAdding || editingId) && (
+      {/* Add form (top-level, only for new teams) */}
+      {isAdding && (
         <Card>
           <CardHeader>
-            <CardTitle>{editingId ? 'Edit Team' : 'Add New Team'}</CardTitle>
+            <CardTitle>Add New Team</CardTitle>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
@@ -189,9 +189,9 @@ export default function TeamsManager() {
                 </Button>
                 <Button
                   type="submit"
-                  disabled={createMutation.isPending || updateMutation.isPending}
+                  disabled={createMutation.isPending}
                 >
-                  {editingId ? 'Update' : 'Create'}
+                  Create
                 </Button>
               </div>
             </form>
@@ -202,47 +202,117 @@ export default function TeamsManager() {
       {/* Teams grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {teams.map((team) => (
-          <Card key={team.id} className="group relative overflow-hidden">
-            <CardContent className="p-6">
-              <div className="flex items-start justify-between">
-                <div className="space-y-1">
-                  <div className="flex items-center gap-2">
-                    <div
-                      className="w-4 h-4 rounded-full border border-border"
-                      style={{ backgroundColor: team.color || '#3b82f6' }}
-                    />
-                    <h3 className="font-semibold text-lg">{team.name}</h3>
+          <div key={team.id}>
+            <Card className="group relative overflow-hidden">
+              <CardContent className="p-6">
+                <div className="flex items-start justify-between">
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2">
+                      <div
+                        className="w-4 h-4 rounded-full border border-border"
+                        style={{ backgroundColor: team.color || '#3b82f6' }}
+                      />
+                      <h3 className="font-semibold text-lg">{team.name}</h3>
+                    </div>
+                    <Badge variant="secondary">{team.city}</Badge>
+                    <div className="flex items-center gap-1.5 text-sm text-muted-foreground pt-2">
+                      <Users className="h-4 w-4" />
+                      <span>{team.runners?.length || 0} runners</span>
+                    </div>
                   </div>
-                  <Badge variant="secondary">{team.city}</Badge>
-                  <div className="flex items-center gap-1.5 text-sm text-muted-foreground pt-2">
-                    <Users className="h-4 w-4" />
-                    <span>{team.runners?.length || 0} runners</span>
+                  <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      onClick={() => startEdit(team)}
+                    >
+                      <Pencil className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      className="text-destructive hover:text-destructive"
+                      onClick={() => {
+                        if (confirm('Delete this team? This cannot be undone.')) {
+                          deleteMutation.mutate(team.id)
+                        }
+                      }}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
                   </div>
                 </div>
-                <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <Button
-                    size="icon"
-                    variant="ghost"
-                    onClick={() => startEdit(team)}
-                  >
-                    <Pencil className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    size="icon"
-                    variant="ghost"
-                    className="text-destructive hover:text-destructive"
-                    onClick={() => {
-                      if (confirm('Delete this team? This cannot be undone.')) {
-                        deleteMutation.mutate(team.id)
-                      }
-                    }}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
+              </CardContent>
+            </Card>
+            {/* Inline edit form below the team card */}
+            {editingId === team.id && (
+              <div className="mt-2 p-4 rounded-lg border bg-muted/30 space-y-4">
+                <form onSubmit={handleSubmit} className="space-y-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium leading-none">Team Name</label>
+                      <Input
+                        value={formData.name}
+                        onChange={(e) => setFormData({ ...formData, name: e.target.value.toUpperCase() })}
+                        placeholder="e.g., BLACK, BLUE"
+                        required
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium leading-none">City</label>
+                      <select
+                        value={formData.city}
+                        onChange={(e) => setFormData({ ...formData, city: e.target.value as 'Houston' | 'Dallas' })}
+                        className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                      >
+                        <option value="Houston">Houston</option>
+                        <option value="Dallas">Dallas</option>
+                      </select>
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium leading-none">Team Color</label>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="color"
+                          value={formData.color}
+                          onChange={(e) => setFormData({ ...formData, color: e.target.value })}
+                          className="h-9 w-12 rounded-md border border-input cursor-pointer"
+                        />
+                        <Input
+                          value={formData.color}
+                          onChange={(e) => setFormData({ ...formData, color: e.target.value })}
+                          placeholder="#3b82f6"
+                          className="flex-1"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium leading-none text-muted-foreground">Quick Colors</label>
+                    <div className="flex flex-wrap gap-2">
+                      {presetColors.map((preset) => (
+                        <button
+                          key={preset.value}
+                          type="button"
+                          onClick={() => setFormData({ ...formData, color: preset.value })}
+                          className={cn(
+                            "w-8 h-8 rounded-md border-2 transition-all",
+                            formData.color === preset.value ? "ring-2 ring-primary ring-offset-2" : "hover:scale-110"
+                          )}
+                          style={{ backgroundColor: preset.value }}
+                          title={preset.name}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                  <div className="flex justify-end gap-3">
+                    <Button type="button" variant="outline" onClick={cancelEdit}>Cancel</Button>
+                    <Button type="submit" disabled={updateMutation.isPending}>Update</Button>
+                  </div>
+                </form>
               </div>
-            </CardContent>
-          </Card>
+            )}
+          </div>
         ))}
       </div>
 
