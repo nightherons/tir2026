@@ -223,6 +223,8 @@ export default function Leaderboard({ standings, totalMiles }: LeaderboardProps)
                     </div>
                     <div className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm text-muted-foreground">
                       <span>Leg {standing.completedLegs + 1}/36</span>
+                      <span className="sm:hidden text-muted-foreground/50">•</span>
+                      <span className="sm:hidden font-mono">{standing.milesCompleted?.toFixed(1) || '0.0'}/{totalMiles.toFixed(0)} mi</span>
                       {standing.currentRunner && (
                         <>
                           <span className="text-muted-foreground/50 hidden sm:inline">•</span>
@@ -284,19 +286,8 @@ export default function Leaderboard({ standings, totalMiles }: LeaderboardProps)
                   )} />
                 </div>
 
-                {/* Mobile: row 2 - stats */}
-                <div className="flex items-center gap-1.5 mt-1.5 pl-10 text-xs text-muted-foreground sm:hidden">
-                  <span className="font-mono">{standing.milesCompleted?.toFixed(1) || '0.0'}/{totalMiles.toFixed(0)} mi</span>
-                  {standing.projectedFinishTime && (
-                    <>
-                      <span>•</span>
-                      <span>ETA {new Date(standing.projectedFinishTime).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}</span>
-                    </>
-                  )}
-                </div>
-
-                {/* Mobile: row 3 - pace badge */}
-                <div className="pl-10 mt-1 sm:hidden">
+                {/* Mobile: row 2 - pace badge + ETA */}
+                <div className="flex items-center gap-2 pl-10 mt-1 sm:hidden">
                   <span className={cn(
                     "inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full",
                     standing.paceVsProjected < 0
@@ -314,6 +305,14 @@ export default function Leaderboard({ standings, totalMiles }: LeaderboardProps)
                     )}
                     {formatPaceDiffShort(standing.paceVsProjected)}
                   </span>
+                  {standing.projectedFinishTime && (
+                    <>
+                      <span className="text-muted-foreground/50">•</span>
+                      <span className="text-xs text-muted-foreground">
+                        ETA {new Date(standing.projectedFinishTime).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}
+                      </span>
+                    </>
+                  )}
                 </div>
               </div>
 
