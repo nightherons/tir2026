@@ -84,23 +84,23 @@ export default function RunnerDetail({ runnerId, onClose }: { runnerId: string; 
       {/* Legs table */}
       <div className="space-y-2">
         <h4 className="text-sm font-medium">Assigned Legs</h4>
-        <div className="border rounded-md overflow-hidden">
-          <table className="w-full text-sm">
+        <div className="border rounded-md overflow-x-auto">
+          <table className="w-full text-sm min-w-[400px]">
             <thead className="bg-muted">
               <tr>
-                <th className="px-3 py-2 text-left font-medium">Leg</th>
-                <th className="px-3 py-2 text-left font-medium">Distance</th>
-                <th className="px-3 py-2 text-left font-medium">Time</th>
-                <th className="px-3 py-2 text-left font-medium">Pace</th>
-                <th className="px-3 py-2 text-center font-medium">Kills</th>
+                <th className="px-2 sm:px-3 py-2 text-left font-medium">Leg</th>
+                <th className="px-2 sm:px-3 py-2 text-left font-medium">Dist</th>
+                <th className="px-2 sm:px-3 py-2 text-left font-medium">Time</th>
+                <th className="px-2 sm:px-3 py-2 text-left font-medium">Pace</th>
+                <th className="px-2 sm:px-3 py-2 text-center font-medium">Kills</th>
               </tr>
             </thead>
             <tbody className="divide-y">
               {runnerDetails.legs.map((leg) => (
                 <tr key={leg.legNumber} className={leg.clockTime ? 'bg-green-50 dark:bg-green-950/20' : ''}>
-                  <td className="px-3 py-2 font-medium">Leg {leg.legNumber}</td>
-                  <td className="px-3 py-2">{leg.distance.toFixed(2)} mi</td>
-                  <td className="px-3 py-2">
+                  <td className="px-2 sm:px-3 py-2 font-medium whitespace-nowrap">{leg.legNumber}</td>
+                  <td className="px-2 sm:px-3 py-2 whitespace-nowrap">{leg.distance.toFixed(2)}</td>
+                  <td className="px-2 sm:px-3 py-2 whitespace-nowrap">
                     {leg.clockTime ? (
                       <span className="flex items-center gap-1">
                         <Clock className="h-3 w-3" />
@@ -110,10 +110,10 @@ export default function RunnerDetail({ runnerId, onClose }: { runnerId: string; 
                       <span className="text-muted-foreground">—</span>
                     )}
                   </td>
-                  <td className="px-3 py-2">
+                  <td className="px-2 sm:px-3 py-2 whitespace-nowrap">
                     {leg.pace ? formatPace(leg.pace) : <span className="text-muted-foreground">—</span>}
                   </td>
-                  <td className="px-3 py-2 text-center">
+                  <td className="px-2 sm:px-3 py-2 text-center">
                     {leg.clockTime ? (
                       leg.kills > 0 ? (
                         <span className="flex items-center justify-center gap-1 text-amber-600">
@@ -135,7 +135,7 @@ export default function RunnerDetail({ runnerId, onClose }: { runnerId: string; 
 
         {/* Summary */}
         {runnerDetails.legs.some(l => l.clockTime) && (
-          <div className="flex gap-4 text-sm pt-2">
+          <div className="flex flex-col sm:flex-row gap-1 sm:gap-4 text-sm pt-2">
             <div>
               <span className="text-muted-foreground">Total time: </span>
               <span className="font-medium">

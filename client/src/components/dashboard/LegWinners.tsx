@@ -59,21 +59,21 @@ function LegCard({ leg }: { leg: LegWithResults }) {
         onClick={() => setExpanded(!expanded)}
         className="w-full px-3 py-2 flex items-center gap-3 hover:bg-muted/50 transition-colors"
       >
-        <div className="flex items-center gap-2 min-w-0 flex-1">
-          <Badge variant="outline" className="shrink-0">
-            Leg {leg.legNumber}
+        <div className="flex items-center gap-1.5 sm:gap-2 min-w-0 flex-1">
+          <Badge variant="outline" className="shrink-0 text-xs">
+            L{leg.legNumber}
           </Badge>
-          <Trophy className="h-4 w-4 text-yellow-500 shrink-0" />
-          <span className="font-medium truncate">{winner.runnerName}</span>
-          <Badge variant="secondary" className="shrink-0 text-xs">
+          <Trophy className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-yellow-500 shrink-0" />
+          <span className="font-medium truncate text-sm">{winner.runnerName}</span>
+          <Badge variant="secondary" className="shrink-0 text-xs hidden sm:inline-flex">
             {winner.teamName}
           </Badge>
         </div>
-        <div className="flex items-center gap-3 text-sm text-muted-foreground shrink-0">
-          <span className="font-mono">{formatTime(winner.clockTime)}</span>
+        <div className="flex items-center gap-1.5 sm:gap-3 text-sm text-muted-foreground shrink-0">
+          <span className="font-mono text-xs sm:text-sm">{formatTime(winner.clockTime)}</span>
           <span className="hidden sm:inline text-xs">{formatPace(winner.pace)}</span>
           {winner.kills > 0 && (
-            <span className="text-amber-600 text-xs">+{winner.kills} kills</span>
+            <span className="text-amber-600 text-xs hidden sm:inline">+{winner.kills}</span>
           )}
           <ChevronDown className={cn(
             "h-4 w-4 transition-transform",
@@ -88,27 +88,27 @@ function LegCard({ leg }: { leg: LegWithResults }) {
           <div className="px-3 py-1.5 text-xs font-medium text-muted-foreground border-b bg-muted/50">
             All Finishers ({leg.results.length} runners • {leg.distance.toFixed(2)} mi)
           </div>
-          <div className="divide-y">
+          <div className="divide-y overflow-x-auto">
             {/* Winner row */}
-            <div className="px-3 py-2 flex items-center gap-3 bg-yellow-50 dark:bg-yellow-950/20">
+            <div className="px-2 sm:px-3 py-2 flex items-center gap-2 sm:gap-3 bg-yellow-50 dark:bg-yellow-950/20 min-w-0">
               {getRankBadge(1)}
-              <span className="font-medium flex-1 truncate">{winner.runnerName}</span>
-              <Badge variant="secondary" className="text-xs">{winner.teamName}</Badge>
-              <span className="font-mono text-sm w-16 text-right">{formatTime(winner.clockTime)}</span>
-              <span className="text-xs text-muted-foreground w-16 text-right">{formatPace(winner.pace)}</span>
-              <span className="w-12 text-right text-xs">
+              <span className="font-medium flex-1 truncate text-sm">{winner.runnerName}</span>
+              <Badge variant="secondary" className="text-xs shrink-0 hidden sm:inline-flex">{winner.teamName}</Badge>
+              <span className="font-mono text-xs sm:text-sm shrink-0">{formatTime(winner.clockTime)}</span>
+              <span className="text-xs text-muted-foreground shrink-0 hidden sm:inline">{formatPace(winner.pace)}</span>
+              <span className="shrink-0 text-xs hidden sm:inline">
                 {winner.kills > 0 ? <span className="text-amber-600">+{winner.kills}</span> : '—'}
               </span>
             </div>
             {/* Other runners */}
             {otherResults.map((result) => (
-              <div key={result.runnerId} className="px-3 py-2 flex items-center gap-3">
+              <div key={result.runnerId} className="px-2 sm:px-3 py-2 flex items-center gap-2 sm:gap-3 min-w-0">
                 {getRankBadge(result.rank)}
-                <span className="flex-1 truncate">{result.runnerName}</span>
-                <Badge variant="outline" className="text-xs">{result.teamName}</Badge>
-                <span className="font-mono text-sm w-16 text-right">{formatTime(result.clockTime)}</span>
-                <span className="text-xs text-muted-foreground w-16 text-right">{formatPace(result.pace)}</span>
-                <span className="w-12 text-right text-xs">
+                <span className="flex-1 truncate text-sm">{result.runnerName}</span>
+                <Badge variant="outline" className="text-xs shrink-0 hidden sm:inline-flex">{result.teamName}</Badge>
+                <span className="font-mono text-xs sm:text-sm shrink-0">{formatTime(result.clockTime)}</span>
+                <span className="text-xs text-muted-foreground shrink-0 hidden sm:inline">{formatPace(result.pace)}</span>
+                <span className="shrink-0 text-xs hidden sm:inline">
                   {result.kills > 0 ? <span className="text-amber-600">+{result.kills}</span> : '—'}
                 </span>
               </div>

@@ -183,7 +183,7 @@ export default function Leaderboard({ standings, totalMiles }: LeaderboardProps)
                   }
                 }}
                 className={cn(
-                  "flex items-center gap-4 p-4 rounded-xl transition-all duration-300 cursor-pointer",
+                  "flex items-center gap-2 sm:gap-4 p-3 sm:p-4 rounded-xl transition-all duration-300 cursor-pointer",
                   isLeader
                     ? "bg-gradient-to-r from-yellow-50 to-amber-50 dark:from-yellow-950/30 dark:to-amber-950/30 border-2 border-yellow-300 dark:border-yellow-700 shadow-md"
                     : "bg-muted/50 hover:bg-muted"
@@ -191,7 +191,7 @@ export default function Leaderboard({ standings, totalMiles }: LeaderboardProps)
               >
                 {/* Rank */}
                 <div className={cn(
-                  "w-10 h-10 rounded-full flex items-center justify-center font-bold text-lg",
+                  "w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center font-bold text-sm sm:text-lg flex-shrink-0",
                   isLeader
                     ? "bg-gradient-to-br from-yellow-400 to-amber-500 text-white shadow-lg"
                     : "bg-muted-foreground/10 text-muted-foreground"
@@ -202,7 +202,7 @@ export default function Leaderboard({ standings, totalMiles }: LeaderboardProps)
                 {/* Team badge */}
                 <div
                   className={cn(
-                    "w-12 h-12 rounded-lg flex items-center justify-center font-bold text-sm shadow-sm border",
+                    "w-10 h-10 sm:w-12 sm:h-12 rounded-lg flex items-center justify-center font-bold text-xs sm:text-sm shadow-sm border flex-shrink-0",
                     colors.bg, colors.text, colors.border
                   )}
                 >
@@ -211,19 +211,19 @@ export default function Leaderboard({ standings, totalMiles }: LeaderboardProps)
 
                 {/* Team info */}
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <span className="font-semibold text-foreground truncate">
+                  <div className="flex items-center gap-1 sm:gap-2">
+                    <span className="font-semibold text-foreground truncate text-sm sm:text-base">
                       {standing.team.name}
                     </span>
-                    <Badge variant="outline" className="text-xs">
+                    <Badge variant="outline" className="text-xs hidden sm:inline-flex">
                       {standing.team.city}
                     </Badge>
                   </div>
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <div className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm text-muted-foreground">
                     <span>Leg {standing.completedLegs + 1}/36</span>
                     {standing.currentRunner && (
                       <>
-                        <span className="text-muted-foreground/50">•</span>
+                        <span className="text-muted-foreground/50 hidden sm:inline">•</span>
                         <button
                           onClick={(e) => {
                             e.stopPropagation()
@@ -238,10 +238,10 @@ export default function Leaderboard({ standings, totalMiles }: LeaderboardProps)
                               }
                             }
                           }}
-                          className="flex items-center gap-1 text-primary hover:underline"
+                          className="hidden sm:flex items-center gap-1 text-primary hover:underline"
                         >
                           <Users className="h-3 w-3" />
-                          {standing.currentRunner.name}
+                          <span className="truncate max-w-[120px]">{standing.currentRunner.name}</span>
                         </button>
                       </>
                     )}
@@ -249,17 +249,18 @@ export default function Leaderboard({ standings, totalMiles }: LeaderboardProps)
                 </div>
 
                 {/* Miles and projected finish */}
-                <div className="text-right">
-                  <div className="font-mono font-semibold text-foreground">
-                    {standing.milesCompleted?.toFixed(1) || '0.0'}/{totalMiles.toFixed(1)} mi
+                <div className="text-right flex-shrink-0">
+                  <div className="font-mono font-semibold text-foreground text-xs sm:text-sm">
+                    {standing.milesCompleted?.toFixed(1) || '0.0'}<span className="hidden sm:inline">/{totalMiles.toFixed(1)}</span> mi
                   </div>
                   {standing.projectedFinishTime ? (
-                    <div className="text-sm text-muted-foreground">
-                      <span>Projected Finish: {new Date(standing.projectedFinishTime).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}</span>
+                    <div className="text-xs sm:text-sm text-muted-foreground">
+                      <span className="hidden sm:inline">Projected Finish: </span>
+                      <span>{new Date(standing.projectedFinishTime).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}</span>
                     </div>
                   ) : null}
                   <div className={cn(
-                    "flex items-center justify-end gap-1 text-sm font-medium",
+                    "flex items-center justify-end gap-1 text-xs sm:text-sm font-medium",
                     standing.paceVsProjected < 0 ? "text-green-600 dark:text-green-400" :
                     standing.paceVsProjected > 0 ? "text-red-600 dark:text-red-400" :
                     "text-muted-foreground"
@@ -277,7 +278,7 @@ export default function Leaderboard({ standings, totalMiles }: LeaderboardProps)
 
                 {/* Expand indicator */}
                 <ChevronDown className={cn(
-                  "h-4 w-4 text-muted-foreground transition-transform",
+                  "h-4 w-4 text-muted-foreground transition-transform flex-shrink-0",
                   isExpanded && "rotate-180"
                 )} />
               </div>

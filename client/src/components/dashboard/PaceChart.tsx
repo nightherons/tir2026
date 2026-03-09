@@ -88,26 +88,27 @@ export default function PaceChart({ standings, legs }: PaceChartProps) {
         <p className="text-sm text-muted-foreground">Actual pace (min/mile) by completed leg</p>
       </CardHeader>
       <CardContent>
-        <div className="h-72">
+        <div className="h-56 sm:h-72 lg:h-80">
           <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={chartData}>
+            <LineChart data={chartData} margin={{ top: 5, right: 5, bottom: 20, left: 0 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
               <XAxis
                 dataKey="leg"
-                tick={{ fontSize: 12 }}
-                label={{ value: 'Leg', position: 'insideBottom', offset: -5 }}
+                tick={{ fontSize: 10 }}
+                label={{ value: 'Leg', position: 'insideBottom', offset: -10 }}
               />
               <YAxis
                 label={{
                   value: 'Pace (min/mi)',
                   angle: -90,
                   position: 'insideLeft',
-                  style: { textAnchor: 'middle' },
+                  style: { textAnchor: 'middle', fontSize: 11 },
                 }}
                 domain={['auto', 'auto']}
-                tick={{ fontSize: 12 }}
+                tick={{ fontSize: 10 }}
                 tickFormatter={(value) => value.toFixed(1)}
                 reversed
+                width={45}
               />
               <Tooltip
                 formatter={(value: number, name: string) => [

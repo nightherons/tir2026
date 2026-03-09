@@ -470,17 +470,17 @@ export default function RaceMap({ legs, standings, raceStartTime, routePaths }: 
 
   if (legs.length === 0 || !routePoints.length) {
     return (
-      <div className="h-[500px] flex items-center justify-center bg-muted rounded-lg">
+      <div className="h-[300px] sm:h-[400px] lg:h-[500px] flex items-center justify-center bg-muted rounded-lg">
         <p className="text-muted-foreground">Loading map data...</p>
       </div>
     )
   }
 
   return (
-    <div className="h-[500px] rounded-lg overflow-hidden border flex">
-      {/* Leg sidebar */}
-      <div className="w-64 bg-background border-r flex flex-col">
-        <div className="p-3 border-b bg-muted/50 flex items-center justify-between">
+    <div className="h-[300px] sm:h-[400px] lg:h-[500px] rounded-lg overflow-hidden border flex flex-col md:flex-row">
+      {/* Leg sidebar - horizontal scroll on mobile, vertical on desktop */}
+      <div className="md:w-64 bg-background border-b md:border-b-0 md:border-r flex flex-col">
+        <div className="p-2 md:p-3 border-b bg-muted/50 flex items-center justify-between">
           <h4 className="font-semibold text-sm">Race Legs</h4>
           <button
             onClick={() => {
@@ -492,20 +492,20 @@ export default function RaceMap({ legs, standings, raceStartTime, routePaths }: 
             View All
           </button>
         </div>
-        <div className="flex-1 overflow-y-auto">
+        <div className="flex md:flex-col overflow-x-auto md:overflow-x-hidden md:overflow-y-auto md:flex-1 max-h-20 md:max-h-none">
           {sortedLegs.map((leg) => (
             <button
               key={leg.legNumber}
               onClick={() => { setVanFocus(null); setSelectedLeg(leg) }}
               className={cn(
-                "w-full px-3 py-2 text-left hover:bg-muted/50 flex items-center gap-2 border-b text-sm transition-colors",
-                selectedLeg?.legNumber === leg.legNumber && "bg-primary/10 border-l-2 border-l-primary"
+                "flex-shrink-0 px-3 py-1.5 md:py-2 text-left hover:bg-muted/50 flex items-center gap-2 border-r md:border-r-0 md:border-b text-sm transition-colors",
+                selectedLeg?.legNumber === leg.legNumber && "bg-primary/10 md:border-l-2 md:border-l-primary"
               )}
             >
-              <MapPin className="h-3 w-3 text-muted-foreground flex-shrink-0" />
-              <div className="flex-1 min-w-0">
-                <div className="font-medium">Leg {leg.legNumber}</div>
-                <div className="text-xs text-muted-foreground">
+              <MapPin className="h-3 w-3 text-muted-foreground flex-shrink-0 hidden md:block" />
+              <div className="min-w-0">
+                <div className="font-medium text-xs md:text-sm whitespace-nowrap">Leg {leg.legNumber}</div>
+                <div className="text-xs text-muted-foreground hidden md:block">
                   {leg.distance.toFixed(2)} mi
                   {leg.difficulty && (
                     <span className={cn(
@@ -523,7 +523,7 @@ export default function RaceMap({ legs, standings, raceStartTime, routePaths }: 
       </div>
 
       {/* Map container */}
-      <div className="flex-1 relative">
+      <div className="flex-1 relative min-h-0">
         <MapContainer
           center={defaultCenter}
           zoom={9}

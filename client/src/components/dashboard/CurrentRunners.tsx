@@ -34,7 +34,7 @@ function RunnerCard({ standing, onClick }: { standing: TeamStanding; onClick: ()
   return (
     <div
       onClick={onClick}
-      className="flex items-center gap-3 px-4 py-2 rounded-lg border-2 shadow-sm min-w-[200px] flex-shrink-0 cursor-pointer hover:opacity-90 transition-opacity"
+      className="flex items-center gap-2 sm:gap-3 px-3 sm:px-4 py-2 rounded-lg border-2 shadow-sm min-w-[160px] sm:min-w-[200px] flex-shrink-0 cursor-pointer hover:opacity-90 transition-opacity"
       style={{
         backgroundColor: teamColor,
         borderColor: borderColor,
@@ -46,7 +46,7 @@ function RunnerCard({ standing, onClick }: { standing: TeamStanding; onClick: ()
         <img
           src="/nhrc.png"
           alt="NHRC"
-          className="w-14 h-14 object-contain"
+          className="w-10 h-10 sm:w-14 sm:h-14 object-contain"
           style={{ filter: isLight ? 'none' : 'brightness(0) invert(1)' }}
         />
       </div>
