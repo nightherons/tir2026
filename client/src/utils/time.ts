@@ -42,6 +42,28 @@ export function formatPaceDiff(diffSeconds: number): string {
 }
 
 /**
+ * Short pace diff for mobile: "+5:30 ahead" / "-2:15 behind" / "On pace"
+ */
+export function formatPaceDiffShort(diffSeconds: number): string {
+  if (diffSeconds === 0) return 'On pace'
+
+  const absSeconds = Math.abs(diffSeconds)
+  const total = Math.floor(absSeconds)
+  const h = Math.floor(total / 3600)
+  const m = Math.floor((total % 3600) / 60)
+  const s = total % 60
+
+  let time: string
+  if (h > 0) {
+    time = `${h}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`
+  } else {
+    time = `${m}:${s.toString().padStart(2, '0')}`
+  }
+
+  return diffSeconds < 0 ? `${time} ahead` : `${time} behind`
+}
+
+/**
  * Parse time string (HH:MM:SS or MM:SS) to total seconds
  */
 export function parseTimeToSeconds(timeString: string): number {

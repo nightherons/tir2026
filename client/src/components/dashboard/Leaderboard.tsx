@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query'
 import { Trophy, TrendingUp, TrendingDown, Minus, Users, ChevronDown } from 'lucide-react'
 import type { TeamStanding } from '../../types'
 import { dashboardApi } from '../../services/api'
-import { formatPaceDiff, formatTime, formatPace } from '../../utils/time'
+import { formatPaceDiff, formatPaceDiffShort, formatTime, formatPace } from '../../utils/time'
 import { getRunnerLegNumbers } from '../../utils/legAssignments'
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card'
 import { Badge } from '../ui/badge'
@@ -284,21 +284,26 @@ export default function Leaderboard({ standings, totalMiles }: LeaderboardProps)
                   )} />
                 </div>
 
-                {/* Mobile: stats row below */}
-                <div className="flex items-center justify-between mt-2 pt-2 border-t border-border/50 sm:hidden">
-                  <div className="font-mono text-xs font-semibold text-foreground">
-                    {standing.milesCompleted?.toFixed(1) || '0.0'} mi
-                  </div>
-                  {standing.projectedFinishTime ? (
-                    <div className="text-xs text-muted-foreground">
-                      Finish: {new Date(standing.projectedFinishTime).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}
-                    </div>
-                  ) : null}
-                  <div className={cn(
-                    "flex items-center gap-1 text-xs font-medium",
-                    standing.paceVsProjected < 0 ? "text-green-600 dark:text-green-400" :
-                    standing.paceVsProjected > 0 ? "text-red-600 dark:text-red-400" :
-                    "text-muted-foreground"
+                {/* Mobile: row 2 - stats */}
+                <div className="flex items-center gap-1.5 mt-1.5 pl-10 text-xs text-muted-foreground sm:hidden">
+                  <span className="font-mono">{standing.milesCompleted?.toFixed(1) || '0.0'}/{totalMiles.toFixed(0)} mi</span>
+                  {standing.projectedFinishTime && (
+                    <>
+                      <span>•</span>
+                      <span>ETA {new Date(standing.projectedFinishTime).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}</span>
+                    </>
+                  )}
+                </div>
+
+                {/* Mobile: row 3 - pace badge */}
+                <div className="pl-10 mt-1 sm:hidden">
+                  <span className={cn(
+                    "inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full",
+                    standing.paceVsProjected < 0
+                      ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
+                      : standing.paceVsProjected > 0
+                      ? "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400"
+                      : "bg-muted text-muted-foreground"
                   )}>
                     {standing.paceVsProjected < 0 ? (
                       <TrendingUp className="h-3 w-3" />
@@ -307,8 +312,8 @@ export default function Leaderboard({ standings, totalMiles }: LeaderboardProps)
                     ) : (
                       <Minus className="h-3 w-3" />
                     )}
-                    {formatPaceDiff(standing.paceVsProjected)}
-                  </div>
+                    {formatPaceDiffShort(standing.paceVsProjected)}
+                  </span>
                 </div>
               </div>
 
