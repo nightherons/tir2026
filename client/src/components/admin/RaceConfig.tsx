@@ -21,6 +21,7 @@ const configFields: Omit<ConfigItem, 'value'>[] = [
   { key: 'totalLegs', label: 'Total Legs', type: 'number' },
   { key: 'runnersPerTeam', label: 'Runners Per Team', type: 'number' },
   { key: 'runnersPerVan', label: 'Runners Per Van', type: 'number' },
+  { key: 'pinLength', label: 'Runner PIN Length (4-8 digits)', type: 'number' },
 ]
 
 export default function RaceConfig() {

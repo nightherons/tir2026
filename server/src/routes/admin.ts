@@ -116,8 +116,15 @@ router.get('/runners', async (req, res) => {
 
 router.post('/runners', async (req, res) => {
   try {
-    const { name, teamId, vanNumber, runOrder, projectedPace, legAssignments } = req.body
-    const pin = generatePin()
+    const { name, teamId, vanNumber, runOrder, projectedPace, legAssignments, pin: manualPin } = req.body
+
+    // Use manual PIN if provided, otherwise generate one using configured length
+    let pin = manualPin
+    if (!pin) {
+      const pinLengthConfig = await prisma.raceConfig.findUnique({ where: { key: 'pinLength' } })
+      const pinLength = pinLengthConfig ? parseInt(pinLengthConfig.value) : 6
+      pin = generatePin(pinLength)
+    }
 
     const runner = await prisma.runner.create({
       data: {
@@ -142,11 +149,16 @@ router.post('/runners', async (req, res) => {
 router.put('/runners/:id', async (req, res) => {
   try {
     const { id } = req.params
-    const { name, teamId, vanNumber, runOrder, projectedPace, legAssignments } = req.body
+    const { name, teamId, vanNumber, runOrder, projectedPace, legAssignments, pin } = req.body
+
+    const updateData: Record<string, unknown> = { name, teamId, vanNumber, runOrder, projectedPace, legAssignments: legAssignments ?? undefined }
+    if (pin) {
+      updateData.pin = pin
+    }
 
     const runner = await prisma.runner.update({
       where: { id },
-      data: { name, teamId, vanNumber, runOrder, projectedPace, legAssignments: legAssignments ?? undefined },
+      data: updateData,
       include: { team: true },
     })
 
@@ -171,9 +183,11 @@ router.delete('/runners/:id', async (req, res) => {
 router.post('/runners/:id/regenerate-pin', async (req, res) => {
   try {
     const { id } = req.params
-    const pin = generatePin()
+    const pinLengthConfig = await prisma.raceConfig.findUnique({ where: { key: 'pinLength' } })
+    const pinLength = pinLengthConfig ? parseInt(pinLengthConfig.value) : 6
+    const pin = generatePin(pinLength)
 
-    const runner = await prisma.runner.update({
+    await prisma.runner.update({
       where: { id },
       data: { pin },
     })

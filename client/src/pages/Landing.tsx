@@ -106,14 +106,14 @@ export default function Landing() {
         <div className="mt-12 flex flex-col sm:flex-row items-center gap-4">
           <button
             onClick={() => navigate('/dashboard')}
-            className="flex items-center gap-2 bg-white/20 hover:bg-white/30 backdrop-blur-sm text-white px-8 py-3 rounded-lg border border-white/30 transition-all hover:scale-105"
+            className="w-48 flex items-center justify-center gap-2 bg-white/20 hover:bg-white/30 backdrop-blur-sm text-white py-3 rounded-lg border border-white/30 transition-all hover:scale-105"
           >
             <Radio className="w-5 h-5" />
             <span className="font-medium">Live Dashboard</span>
           </button>
           <button
             onClick={() => setShowLoginModal(true)}
-            className="flex items-center gap-2 bg-white/10 hover:bg-white/20 backdrop-blur-sm text-white/70 px-6 py-3 rounded-lg border border-white/20 transition-all hover:scale-105"
+            className="w-48 flex items-center justify-center gap-2 bg-white/10 hover:bg-white/20 backdrop-blur-sm text-white/70 py-3 rounded-lg border border-white/20 transition-all hover:scale-105"
           >
             <LogIn className="w-5 h-5" />
             <span className="font-medium">Admin Login</span>

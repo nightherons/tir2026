@@ -1,12 +1,21 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { api } from '../../services/api'
 import { useAuthStore } from '../../store/authStore'
 
 export default function PinLogin() {
   const [pin, setPin] = useState('')
+  const [pinLength, setPinLength] = useState(6)
   const { loginWithPin, isLoading, error, clearError } = useAuthStore()
 
+  useEffect(() => {
+    api.get('/dashboard/config/pin-length').then(res => {
+      const len = res.data?.data?.pinLength
+      if (len && len >= 4 && len <= 8) setPinLength(len)
+    }).catch(() => {})
+  }, [])
+
   const handleDigit = (digit: string) => {
-    if (pin.length < 6) {
+    if (pin.length < pinLength) {
       setPin(pin + digit)
       clearError()
     }
@@ -23,17 +32,17 @@ export default function PinLogin() {
   }
 
   const handleSubmit = async () => {
-    if (pin.length >= 4) {
+    if (pin.length >= pinLength) {
       await loginWithPin(pin)
     }
   }
 
   return (
-    <div className="flex-1 flex flex-col gap-3">
+    <div className="flex flex-col gap-3">
       {/* PIN display */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-3 flex-shrink-0">
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-3">
         <div className="flex justify-center space-x-2">
-          {[0, 1, 2, 3, 4, 5].map((i) => (
+          {Array.from({ length: pinLength }, (_, i) => (
             <div
               key={i}
               className={`w-10 h-11 rounded-lg border-2 flex items-center justify-center text-xl font-bold ${
@@ -52,14 +61,14 @@ export default function PinLogin() {
         )}
       </div>
 
-      {/* Number pad - fills remaining space */}
-      <div className="grid grid-cols-3 gap-2 flex-1 min-h-0">
+      {/* Number pad */}
+      <div className="grid grid-cols-3 gap-2">
         {['1', '2', '3', '4', '5', '6', '7', '8', '9'].map((digit) => (
           <button
             key={digit}
             type="button"
             onClick={() => handleDigit(digit)}
-            className="bg-white rounded-xl shadow-sm border border-gray-100 text-2xl font-semibold text-gray-800 hover:bg-gray-50 active:bg-gray-100 transition-colors disabled:opacity-50"
+            className="bg-white rounded-xl shadow-sm border border-gray-100 text-2xl font-semibold text-gray-800 hover:bg-gray-50 active:bg-gray-100 transition-colors disabled:opacity-50 py-4"
             disabled={isLoading}
           >
             {digit}
@@ -68,7 +77,7 @@ export default function PinLogin() {
         <button
           type="button"
           onClick={handleClear}
-          className="bg-white rounded-xl shadow-sm border border-gray-100 text-gray-500 text-base font-medium hover:bg-gray-50 active:bg-gray-100 transition-colors disabled:opacity-50"
+          className="bg-white rounded-xl shadow-sm border border-gray-100 text-gray-500 text-base font-medium hover:bg-gray-50 active:bg-gray-100 transition-colors disabled:opacity-50 py-4"
           disabled={isLoading}
         >
           Clear
@@ -76,7 +85,7 @@ export default function PinLogin() {
         <button
           type="button"
           onClick={() => handleDigit('0')}
-          className="bg-white rounded-xl shadow-sm border border-gray-100 text-2xl font-semibold text-gray-800 hover:bg-gray-50 active:bg-gray-100 transition-colors disabled:opacity-50"
+          className="bg-white rounded-xl shadow-sm border border-gray-100 text-2xl font-semibold text-gray-800 hover:bg-gray-50 active:bg-gray-100 transition-colors disabled:opacity-50 py-4"
           disabled={isLoading}
         >
           0
@@ -84,7 +93,7 @@ export default function PinLogin() {
         <button
           type="button"
           onClick={handleBackspace}
-          className="bg-white rounded-xl shadow-sm border border-gray-100 text-gray-500 hover:bg-gray-50 active:bg-gray-100 transition-colors disabled:opacity-50 flex items-center justify-center"
+          className="bg-white rounded-xl shadow-sm border border-gray-100 text-gray-500 hover:bg-gray-50 active:bg-gray-100 transition-colors disabled:opacity-50 flex items-center justify-center py-4"
           disabled={isLoading}
         >
           <svg
@@ -106,9 +115,9 @@ export default function PinLogin() {
       {/* Submit button */}
       <button
         onClick={handleSubmit}
-        disabled={pin.length < 4 || isLoading}
-        className={`w-full py-4 rounded-xl text-lg font-semibold transition-all flex-shrink-0 ${
-          pin.length >= 4 && !isLoading
+        disabled={pin.length < pinLength || isLoading}
+        className={`w-full py-4 rounded-xl text-lg font-semibold transition-all ${
+          pin.length >= pinLength && !isLoading
             ? 'bg-blue-600 text-white hover:bg-blue-700'
             : 'bg-gray-200 text-gray-400 cursor-not-allowed'
         }`}

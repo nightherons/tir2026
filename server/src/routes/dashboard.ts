@@ -532,4 +532,14 @@ router.get('/debug', async (req, res) => {
   }
 })
 
+// Public config (PIN length for login UI)
+router.get('/config/pin-length', async (req, res) => {
+  try {
+    const config = await prisma.raceConfig.findUnique({ where: { key: 'pinLength' } })
+    res.json({ success: true, data: { pinLength: config ? parseInt(config.value) : 6 } })
+  } catch (error) {
+    res.json({ success: true, data: { pinLength: 6 } })
+  }
+})
+
 export default router

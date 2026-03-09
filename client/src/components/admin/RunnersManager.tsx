@@ -37,6 +37,7 @@ function RunnerEditForm({
       runOrder: runner?.runOrder || 1,
       projectedPace: runner?.projectedPace || 420,
       legAssignments: legAssignmentsStr,
+      pin: '',
     }
   })
 
@@ -57,14 +58,18 @@ function RunnerEditForm({
       .split(',')
       .map((s) => parseInt(s.trim()))
       .filter((n) => !isNaN(n) && n >= 1 && n <= 36)
-    const submitData = {
-      ...formData,
+    const { pin, ...rest } = formData
+    const submitData: Record<string, unknown> = {
+      ...rest,
       legAssignments: legNums.length > 0 ? JSON.stringify(legNums) : null,
+    }
+    if (pin) {
+      submitData.pin = pin
     }
     if (isEditing) {
       updateMutation.mutate({ id: runner.id, data: submitData })
     } else {
-      createMutation.mutate(submitData)
+      createMutation.mutate(submitData as Parameters<typeof adminApi.createRunner>[0])
     }
   }
 
@@ -174,6 +179,15 @@ function RunnerEditForm({
           <p className="text-xs text-muted-foreground">
             Comma-separated leg numbers. Leave blank for standard rotation.
           </p>
+        </div>
+        <div className="space-y-2">
+          <label className="text-sm font-medium">PIN {isEditing ? '(leave blank to keep current)' : '(leave blank to auto-generate)'}</label>
+          <Input
+            value={formData.pin}
+            onChange={(e) => setFormData({ ...formData, pin: e.target.value.replace(/\D/g, '') })}
+            placeholder={isEditing ? 'Keep current PIN' : 'Auto-generate'}
+            maxLength={8}
+          />
         </div>
       </div>
       <div className="flex justify-end gap-3">

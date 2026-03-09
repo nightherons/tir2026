@@ -40,8 +40,8 @@ export default function RunnerEntry() {
       </header>
 
       {/* Main content */}
-      <main className="flex-1 overflow-hidden">
-        <div className="max-w-lg mx-auto px-4 py-4 h-full flex flex-col">
+      <main className="flex-1 overflow-y-auto">
+        <div className="max-w-lg mx-auto px-4 py-4 min-h-full flex flex-col">
           {/* Success message */}
           {showSuccess && (
             <div className="mb-4 bg-green-50 border border-green-200 rounded-xl p-4 text-center animate-pulse flex-shrink-0">
