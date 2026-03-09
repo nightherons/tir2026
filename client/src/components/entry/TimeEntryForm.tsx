@@ -85,11 +85,11 @@ export default function TimeEntryForm({ onSuccess }: TimeEntryFormProps) {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-3 sm:space-y-6">
       {/* Leg selection */}
       <div className="card">
-        <h3 className="font-semibold text-gray-900 mb-3">Your Legs</h3>
-        <div className="grid grid-cols-3 gap-2">
+        <h3 className="font-semibold text-gray-900 mb-2">Your Legs</h3>
+        <div className="grid grid-cols-3 gap-1.5 sm:gap-2">
           {legs.map((leg) => {
             const isCompleted = completedLegNumbers.includes(leg.legNumber)
             const isSelected = selectedLeg?.id === leg.id
@@ -100,7 +100,7 @@ export default function TimeEntryForm({ onSuccess }: TimeEntryFormProps) {
                 type="button"
                 onClick={() => !isCompleted && setSelectedLeg(leg)}
                 disabled={isCompleted}
-                className={`p-3 rounded-lg border-2 text-center transition-all ${
+                className={`p-2 sm:p-3 rounded-lg border-2 text-center transition-all ${
                   isCompleted
                     ? 'border-green-200 bg-green-50 cursor-not-allowed'
                     : isSelected
@@ -108,10 +108,10 @@ export default function TimeEntryForm({ onSuccess }: TimeEntryFormProps) {
                     : 'border-gray-200 hover:border-gray-300'
                 }`}
               >
-                <p className={`font-bold ${isCompleted ? 'text-green-600' : 'text-gray-900'}`}>
+                <p className={`font-bold text-sm sm:text-base ${isCompleted ? 'text-green-600' : 'text-gray-900'}`}>
                   Leg {leg.legNumber}
                 </p>
-                <p className="text-sm text-gray-500">{leg.distance} mi</p>
+                <p className="text-xs sm:text-sm text-gray-500">{leg.distance} mi</p>
                 {isCompleted && (
                   <span className="text-xs text-green-600">Done</span>
                 )}
@@ -125,24 +125,24 @@ export default function TimeEntryForm({ onSuccess }: TimeEntryFormProps) {
         <>
           {/* Time entry */}
           <div className="card">
-            <h3 className="font-semibold text-gray-900 mb-1">
+            <h3 className="font-semibold text-gray-900 text-sm sm:text-base">
               Enter Time for Leg {selectedLeg.legNumber}
             </h3>
-            <p className="text-sm text-gray-500 mb-4">
-              {selectedLeg.distance} miles
+            <p className="text-xs sm:text-sm text-gray-500 mb-2 sm:mb-4">
+              {selectedLeg.distance} mi
               {selectedLeg.startPoint && ` • ${selectedLeg.startPoint}`}
               {selectedLeg.endPoint && ` → ${selectedLeg.endPoint}`}
             </p>
 
             {error && (
-              <div className="bg-red-50 border border-red-200 rounded-lg p-3 mb-4">
+              <div className="bg-red-50 border border-red-200 rounded-lg p-2 mb-2">
                 <p className="text-sm text-red-800">{error}</p>
               </div>
             )}
 
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-3 gap-2 sm:gap-3">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1 text-center">
+                <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1 text-center">
                   Hours
                 </label>
                 <input
@@ -152,12 +152,12 @@ export default function TimeEntryForm({ onSuccess }: TimeEntryFormProps) {
                   max="23"
                   value={hours}
                   onChange={(e) => setHours(e.target.value)}
-                  className="input text-center text-3xl font-mono py-4"
+                  className="input text-center text-2xl sm:text-3xl font-mono py-2 sm:py-4"
                   placeholder="0"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1 text-center">
+                <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1 text-center">
                   Min
                 </label>
                 <input
@@ -167,12 +167,12 @@ export default function TimeEntryForm({ onSuccess }: TimeEntryFormProps) {
                   max="59"
                   value={minutes}
                   onChange={(e) => setMinutes(e.target.value)}
-                  className="input text-center text-3xl font-mono py-4"
+                  className="input text-center text-2xl sm:text-3xl font-mono py-2 sm:py-4"
                   placeholder="00"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1 text-center">
+                <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1 text-center">
                   Sec
                 </label>
                 <input
@@ -182,7 +182,7 @@ export default function TimeEntryForm({ onSuccess }: TimeEntryFormProps) {
                   max="59"
                   value={seconds}
                   onChange={(e) => setSeconds(e.target.value)}
-                  className="input text-center text-3xl font-mono py-4"
+                  className="input text-center text-2xl sm:text-3xl font-mono py-2 sm:py-4"
                   placeholder="00"
                 />
               </div>
@@ -191,34 +191,36 @@ export default function TimeEntryForm({ onSuccess }: TimeEntryFormProps) {
 
           {/* Kills */}
           <div className="card">
-            <h3 className="font-semibold text-gray-900 mb-1">Kills</h3>
-            <p className="text-sm text-gray-500 mb-3">
-              How many runners did you pass?
-            </p>
-            <div className="flex items-center justify-center space-x-4">
-              <button
-                type="button"
-                onClick={() => setKills(Math.max(0, parseInt(kills || '0') - 1).toString())}
-                className="w-14 h-14 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center text-2xl"
-              >
-                -
-              </button>
-              <input
-                type="number"
-                inputMode="numeric"
-                min="0"
-                value={kills}
-                onChange={(e) => setKills(e.target.value)}
-                className="w-20 text-center text-3xl font-mono border-b-2 border-gray-300 focus:border-blue-500 outline-none py-2"
-                placeholder="0"
-              />
-              <button
-                type="button"
-                onClick={() => setKills((parseInt(kills || '0') + 1).toString())}
-                className="w-14 h-14 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center text-2xl"
-              >
-                +
-              </button>
+            <div className="flex items-center justify-between mb-2">
+              <div>
+                <h3 className="font-semibold text-gray-900 text-sm sm:text-base">Kills</h3>
+                <p className="text-xs text-gray-500">Runners passed</p>
+              </div>
+              <div className="flex items-center space-x-3">
+                <button
+                  type="button"
+                  onClick={() => setKills(Math.max(0, parseInt(kills || '0') - 1).toString())}
+                  className="w-10 h-10 sm:w-14 sm:h-14 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center text-xl sm:text-2xl"
+                >
+                  -
+                </button>
+                <input
+                  type="number"
+                  inputMode="numeric"
+                  min="0"
+                  value={kills}
+                  onChange={(e) => setKills(e.target.value)}
+                  className="w-14 sm:w-20 text-center text-2xl sm:text-3xl font-mono border-b-2 border-gray-300 focus:border-blue-500 outline-none py-1"
+                  placeholder="0"
+                />
+                <button
+                  type="button"
+                  onClick={() => setKills((parseInt(kills || '0') + 1).toString())}
+                  className="w-10 h-10 sm:w-14 sm:h-14 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center text-xl sm:text-2xl"
+                >
+                  +
+                </button>
+              </div>
             </div>
           </div>
 
@@ -226,7 +228,7 @@ export default function TimeEntryForm({ onSuccess }: TimeEntryFormProps) {
           <button
             onClick={handleSubmit}
             disabled={isSubmitting}
-            className="w-full btn-primary py-4 text-lg"
+            className="w-full btn-primary py-3 sm:py-4 text-base sm:text-lg"
           >
             {isSubmitting ? 'Submitting...' : 'Submit Time'}
           </button>

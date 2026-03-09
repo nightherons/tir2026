@@ -52,11 +52,11 @@ export default function RunnerEntry() {
           {!isRunner ? (
             <PinLogin />
           ) : (
-            <div className="space-y-6">
+            <div className="space-y-3 sm:space-y-6">
               {/* Runner info */}
-              <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
-                <p className="text-sm text-gray-500">Logged in as</p>
-                <p className="text-xl font-semibold text-gray-900">
+              <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-3 sm:p-4">
+                <p className="text-xs sm:text-sm text-gray-500">Logged in as</p>
+                <p className="text-lg sm:text-xl font-semibold text-gray-900">
                   {(user as { name: string })?.name}
                 </p>
               </div>
