@@ -110,6 +110,11 @@ export default function Dashboard() {
       {/* Currently Running - horizontal banner */}
       <CurrentRunners standings={standings} />
 
+      {/* Runner search - visible on mobile only, right after currently running */}
+      <div className="lg:hidden">
+        <RunnerSearch />
+      </div>
+
       {/* Live Race Map */}
       {legsData && legsData.length > 0 && (
         <div>
@@ -126,8 +131,10 @@ export default function Dashboard() {
         {/* Kills leaderboard */}
         <KillsLeaderboard standings={standings} />
 
-        {/* Runner search */}
-        <RunnerSearch />
+        {/* Runner search - desktop only (mobile version is above) */}
+        <div className="hidden lg:block">
+          <RunnerSearch />
+        </div>
       </div>
 
       {/* Pace chart */}

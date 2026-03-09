@@ -43,7 +43,7 @@ export default function RunnerSearch() {
             placeholder="Search by runner name..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-9"
+            className="pl-9 text-base"
           />
         </div>
 
