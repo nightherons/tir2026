@@ -57,20 +57,14 @@ export default function TimeEntryForm({ onSuccess }: TimeEntryFormProps) {
         clockTime,
         kills: parseInt(kills || '0'),
       })
-      await queryClient.invalidateQueries({ queryKey: ['runner-legs'] })
-      onSuccess()
-      // Reset form
+      // Reset form and clear selected leg so useEffect picks the next one after refetch
       setHours('')
       setMinutes('')
       setSeconds('')
       setKills('')
-      // Move to next leg
-      const nextLeg = legs.find(
-        (leg) =>
-          leg.legNumber > selectedLeg.legNumber &&
-          !completedLegNumbers.includes(leg.legNumber)
-      )
-      setSelectedLeg(nextLeg || null)
+      setSelectedLeg(null)
+      await queryClient.refetchQueries({ queryKey: ['runner-legs'] })
+      onSuccess()
     } catch (err) {
       setError('Failed to submit time. Please try again.')
     } finally {
