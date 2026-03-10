@@ -2,6 +2,7 @@ import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import type { AdminUser, RunnerUser } from '../types'
 import { api } from '../services/api'
+import { queryClient } from '../lib/queryClient'
 
 interface AuthState {
   isAuthenticated: boolean
@@ -81,6 +82,7 @@ export const useAuthStore = create<AuthState>()(
           token: null,
           userType: null,
         })
+        queryClient.removeQueries({ queryKey: ['runner-legs'] })
       },
 
       checkAuth: () => {
