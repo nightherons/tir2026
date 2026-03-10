@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { runnerApi, entryApi } from '../../services/api'
+import { queryClient } from '../../lib/queryClient'
 import type { Leg } from '../../types'
 
 interface TimeEntryFormProps {
@@ -56,6 +57,7 @@ export default function TimeEntryForm({ onSuccess }: TimeEntryFormProps) {
         clockTime,
         kills: parseInt(kills || '0'),
       })
+      await queryClient.invalidateQueries({ queryKey: ['runner-legs'] })
       onSuccess()
       // Reset form
       setHours('')
