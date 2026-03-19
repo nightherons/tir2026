@@ -36,11 +36,41 @@ router.get('/legs', authMiddleware, runnerAuth, async (req, res) => {
 
     const completedLegs = runner.legResults.map((r) => r.leg.legNumber)
 
+    // Include adjustedDistance info for exchange zone legs
+    const adjustedDistances: Record<number, number> = {}
+    for (const result of runner.legResults) {
+      if (result.adjustedDistance != null) {
+        adjustedDistances[result.leg.legNumber] = result.adjustedDistance
+      }
+    }
+
+    // Also check if leg 12 runner on same team has set an adjustment (affects leg 13)
+    if (legNumbers.includes(13)) {
+      const teamRunners = await prisma.runner.findMany({
+        where: { teamId: runner.teamId },
+        include: { legResults: { include: { leg: true } } },
+      })
+      for (const r of teamRunners) {
+        for (const result of r.legResults) {
+          if (result.leg.legNumber === 12 && result.adjustedDistance != null) {
+            // Compute leg 13's adjusted distance from leg 12's
+            const leg12 = await prisma.leg.findUnique({ where: { legNumber: 12 } })
+            const leg13 = await prisma.leg.findUnique({ where: { legNumber: 13 } })
+            if (leg12 && leg13) {
+              const combined = leg12.distance + leg13.distance
+              adjustedDistances[13] = Math.round((combined - result.adjustedDistance) * 100) / 100
+            }
+          }
+        }
+      }
+    }
+
     res.json({
       success: true,
       data: {
         legs,
         completedLegs,
+        adjustedDistances,
       },
     })
   } catch (error) {

@@ -14,6 +14,8 @@ interface RunnerLegResult {
   id: string
   legNumber: number
   distance: number
+  adjustedDistance: number | null
+  effectiveDistance: number
   clockTime: number | null
   kills: number
   pace: number | null
@@ -28,6 +30,7 @@ export default function TimeEntryAdmin() {
   const [minutes, setMinutes] = useState('')
   const [seconds, setSeconds] = useState('')
   const [kills, setKills] = useState('')
+  const [adjustedDistance, setAdjustedDistance] = useState('')
   const [success, setSuccess] = useState(false)
   const [error, setError] = useState('')
 
@@ -100,6 +103,7 @@ export default function TimeEntryAdmin() {
       setMinutes('')
       setSeconds('')
       setKills('')
+      setAdjustedDistance('')
       setSelectedLeg('')
       setTimeout(() => setSuccess(false), 3000)
     },
@@ -127,12 +131,25 @@ export default function TimeEntryAdmin() {
       return
     }
 
-    submitMutation.mutate({
+    const legNum = parseInt(selectedLeg)
+    const payload: {
+      runnerId: string
+      legNumber: number
+      clockTime: number
+      kills: number
+      adjustedDistance?: number
+    } = {
       runnerId: selectedRunner,
-      legNumber: parseInt(selectedLeg),
+      legNumber: legNum,
       clockTime,
       kills: parseInt(kills || '0'),
-    })
+    }
+
+    if ((legNum === 12 || legNum === 13) && adjustedDistance) {
+      payload.adjustedDistance = parseFloat(adjustedDistance)
+    }
+
+    submitMutation.mutate(payload)
   }
 
   return (
@@ -243,7 +260,13 @@ export default function TimeEntryAdmin() {
                     <div className="flex items-center gap-3">
                       <span className="font-semibold text-sm">Leg {result.legNumber}</span>
                       <span className="text-sm font-mono">{formatTime(result.clockTime!)}</span>
-                      <span className="text-xs text-muted-foreground">{result.distance} mi</span>
+                      <span className="text-xs text-muted-foreground">
+                        {result.adjustedDistance != null ? (
+                          <>{result.adjustedDistance} mi <span className="text-amber-600">(adj)</span></>
+                        ) : (
+                          <>{result.distance} mi</>
+                        )}
+                      </span>
                       {result.kills > 0 && (
                         <span className="text-xs text-amber-600">{result.kills} kills</span>
                       )}
@@ -373,6 +396,31 @@ export default function TimeEntryAdmin() {
                 />
               </CardContent>
             </Card>
+
+            {(parseInt(selectedLeg) === 12 || parseInt(selectedLeg) === 13) && (
+              <Card className="border-amber-200 dark:border-amber-900">
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-base">Exchange Zone Distance (optional)</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-xs text-muted-foreground mb-3">
+                    Override distance for this exchange zone leg. Leave blank to use default.
+                    {parseInt(selectedLeg) === 12 && ' Setting this will auto-adjust Leg 13.'}
+                  </p>
+                  <div className="flex items-center gap-2">
+                    <Input
+                      type="number"
+                      step="0.01"
+                      value={adjustedDistance}
+                      onChange={(e) => setAdjustedDistance(e.target.value)}
+                      className="w-32"
+                      placeholder={runnerLegs.find(l => l.legNumber === parseInt(selectedLeg))?.distance.toString() || ''}
+                    />
+                    <span className="text-sm text-muted-foreground">miles</span>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
 
             <Button
               type="submit"

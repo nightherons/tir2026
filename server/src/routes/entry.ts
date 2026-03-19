@@ -8,10 +8,56 @@ import { Server } from 'socket.io'
 const router = Router()
 const prisma = new PrismaClient()
 
+// Exchange zone constants: leg 12/13 combined distance is fixed
+const EXCHANGE_LEG_A = 12
+const EXCHANGE_LEG_B = 13
+const EXCHANGE_MAX_ADJUSTMENT = 2 // ±2 miles
+
+// Update leg 13's adjustedDistance when leg 12 submits an adjustment
+async function syncExchangeZoneDistance(
+  teamId: string,
+  legNumber: number,
+  adjustedDistance: number | null
+) {
+  if (legNumber !== EXCHANGE_LEG_A || adjustedDistance == null) return
+
+  // Get the base distances for both legs
+  const [legA, legB] = await Promise.all([
+    prisma.leg.findUnique({ where: { legNumber: EXCHANGE_LEG_A } }),
+    prisma.leg.findUnique({ where: { legNumber: EXCHANGE_LEG_B } }),
+  ])
+  if (!legA || !legB) return
+
+  const combinedDistance = legA.distance + legB.distance
+  const leg13AdjustedDistance = Math.round((combinedDistance - adjustedDistance) * 100) / 100
+
+  // Find the team's runner assigned to leg 13
+  const teamRunners = await prisma.runner.findMany({ where: { teamId } })
+  const leg13Runner = teamRunners.find(r =>
+    getRunnerLegNumbers(r).includes(EXCHANGE_LEG_B)
+  )
+  if (!leg13Runner) return
+
+  // Upsert leg 13's result with the complementary distance
+  const existingResult = await prisma.legResult.findUnique({
+    where: { legId_runnerId: { legId: legB.id, runnerId: leg13Runner.id } },
+  })
+
+  if (existingResult) {
+    await prisma.legResult.update({
+      where: { id: existingResult.id },
+      data: { adjustedDistance: leg13AdjustedDistance },
+    })
+  }
+  // If leg 13 has no result yet, the distance will be set when they view their leg info
+  // We store it as a pending adjustment on the team — but since LegResult requires clockTime,
+  // we just let the runner see it when they open the form (fetched via API)
+}
+
 // Runner submits their own time
 router.post('/time', authMiddleware, async (req, res) => {
   try {
-    const { legNumber, clockTime, kills } = req.body
+    const { legNumber, clockTime, kills, adjustedDistance } = req.body
     const runnerId = req.user!.id
 
     if (!legNumber || clockTime === undefined) {
@@ -34,6 +80,20 @@ router.post('/time', authMiddleware, async (req, res) => {
       return res.status(403).json({ success: false, error: 'This is not your leg' })
     }
 
+    // Validate adjustedDistance for exchange zone leg
+    if (adjustedDistance != null && legNumber === EXCHANGE_LEG_A) {
+      const leg12 = await prisma.leg.findUnique({ where: { legNumber: EXCHANGE_LEG_A } })
+      if (leg12) {
+        const offset = adjustedDistance - leg12.distance
+        if (Math.abs(offset) > EXCHANGE_MAX_ADJUSTMENT) {
+          return res.status(400).json({
+            success: false,
+            error: `Distance adjustment cannot exceed ±${EXCHANGE_MAX_ADJUSTMENT} miles`,
+          })
+        }
+      }
+    }
+
     // Get the leg
     const leg = await prisma.leg.findUnique({
       where: { legNumber },
@@ -54,6 +114,7 @@ router.post('/time', authMiddleware, async (req, res) => {
       update: {
         clockTime,
         kills: kills || 0,
+        adjustedDistance: legNumber === EXCHANGE_LEG_A ? (adjustedDistance ?? null) : undefined,
         enteredBy: 'runner',
       },
       create: {
@@ -61,6 +122,7 @@ router.post('/time', authMiddleware, async (req, res) => {
         runnerId,
         clockTime,
         kills: kills || 0,
+        adjustedDistance: legNumber === EXCHANGE_LEG_A ? (adjustedDistance ?? null) : undefined,
         enteredBy: 'runner',
       },
       include: {
@@ -68,6 +130,9 @@ router.post('/time', authMiddleware, async (req, res) => {
         runner: { include: { team: true } },
       },
     })
+
+    // Sync leg 13 distance if leg 12 was adjusted
+    await syncExchangeZoneDistance(runner.teamId, legNumber, adjustedDistance ?? null)
 
     // Emit socket event
     const io: Server = req.app.get('io')
@@ -86,7 +151,7 @@ router.post('/time', authMiddleware, async (req, res) => {
 // Captain submits time for van runner
 router.post('/van', authMiddleware, captainOrAdmin, async (req, res) => {
   try {
-    const { runnerId, legNumber, clockTime, kills } = req.body
+    const { runnerId, legNumber, clockTime, kills, adjustedDistance } = req.body
 
     if (!runnerId || !legNumber || clockTime === undefined) {
       return res.status(400).json({ success: false, error: 'Missing required fields' })
@@ -132,6 +197,7 @@ router.post('/van', authMiddleware, captainOrAdmin, async (req, res) => {
       update: {
         clockTime,
         kills: kills || 0,
+        adjustedDistance: (legNumber === EXCHANGE_LEG_A || legNumber === EXCHANGE_LEG_B) ? (adjustedDistance ?? null) : undefined,
         enteredBy: 'captain',
       },
       create: {
@@ -139,6 +205,7 @@ router.post('/van', authMiddleware, captainOrAdmin, async (req, res) => {
         runnerId,
         clockTime,
         kills: kills || 0,
+        adjustedDistance: (legNumber === EXCHANGE_LEG_A || legNumber === EXCHANGE_LEG_B) ? (adjustedDistance ?? null) : undefined,
         enteredBy: 'captain',
       },
       include: {
@@ -146,6 +213,9 @@ router.post('/van', authMiddleware, captainOrAdmin, async (req, res) => {
         runner: { include: { team: true } },
       },
     })
+
+    // Sync exchange zone if leg 12 was adjusted
+    await syncExchangeZoneDistance(runner.teamId, legNumber, adjustedDistance ?? null)
 
     // Emit socket event
     const io: Server = req.app.get('io')

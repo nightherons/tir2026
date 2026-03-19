@@ -52,18 +52,19 @@ model Leg {
 }
 
 model LegResult {
-  id        String    @id @default(cuid())
-  legId     String
-  leg       Leg       @relation(fields: [legId], references: [id], onDelete: Cascade)
-  runnerId  String
-  runner    Runner    @relation(fields: [runnerId], references: [id], onDelete: Cascade)
-  clockTime Int       // total seconds for leg
-  startTime DateTime?
-  endTime   DateTime?
-  kills     Int       @default(0)
-  enteredBy String    // runner, captain, admin
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
+  id               String    @id @default(cuid())
+  legId            String
+  leg              Leg       @relation(fields: [legId], references: [id], onDelete: Cascade)
+  runnerId         String
+  runner           Runner    @relation(fields: [runnerId], references: [id], onDelete: Cascade)
+  clockTime        Int       // total seconds for leg
+  startTime        DateTime?
+  endTime          DateTime?
+  kills            Int       @default(0)
+  adjustedDistance  Float?    // per-team override for exchange zone legs (12/13)
+  enteredBy        String    // runner, captain, admin
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
 
   @@unique([legId, runnerId])
 }

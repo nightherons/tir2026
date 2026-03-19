@@ -4,6 +4,11 @@ import { runnerApi, entryApi } from '../../services/api'
 import { queryClient } from '../../lib/queryClient'
 import type { Leg } from '../../types'
 
+const EXCHANGE_LEG_A = 12
+const EXCHANGE_LEG_B = 13
+const EXCHANGE_MAX_ADJUSTMENT = 2 // ±2 miles
+const EXCHANGE_STEP = 0.1
+
 interface TimeEntryFormProps {
   onSuccess: () => void
 }
@@ -14,6 +19,7 @@ export default function TimeEntryForm({ onSuccess }: TimeEntryFormProps) {
   const [minutes, setMinutes] = useState('')
   const [seconds, setSeconds] = useState('')
   const [kills, setKills] = useState('')
+  const [distanceAdjustment, setDistanceAdjustment] = useState(0) // offset from base distance
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState('')
 
@@ -24,6 +30,7 @@ export default function TimeEntryForm({ onSuccess }: TimeEntryFormProps) {
 
   const legs: Leg[] = legsData?.data?.data?.legs || []
   const completedLegNumbers: number[] = legsData?.data?.data?.completedLegs || []
+  const adjustedDistances: Record<number, number> = legsData?.data?.data?.adjustedDistances || {}
 
   // Auto-select next incomplete leg
   useEffect(() => {
@@ -34,6 +41,26 @@ export default function TimeEntryForm({ onSuccess }: TimeEntryFormProps) {
       }
     }
   }, [legs, completedLegNumbers, selectedLeg])
+
+  // Reset distance adjustment when leg changes
+  useEffect(() => {
+    setDistanceAdjustment(0)
+  }, [selectedLeg?.id])
+
+  const isExchangeLeg = selectedLeg?.legNumber === EXCHANGE_LEG_A
+
+  // Get leg 13 base distance for showing the complement
+  const leg13 = legs.find(l => l.legNumber === EXCHANGE_LEG_B)
+  const leg13Base = leg13?.distance
+  // If not in this runner's legs, try to get from seed data (6.05)
+  const leg13BaseDistance = leg13Base ?? 6.05
+
+  const effectiveLeg12Distance = selectedLeg && isExchangeLeg
+    ? Math.round((selectedLeg.distance + distanceAdjustment) * 100) / 100
+    : null
+  const effectiveLeg13Distance = selectedLeg && isExchangeLeg
+    ? Math.round((leg13BaseDistance - distanceAdjustment) * 100) / 100
+    : null
 
   const handleSubmit = async () => {
     if (!selectedLeg) return
@@ -52,16 +79,29 @@ export default function TimeEntryForm({ onSuccess }: TimeEntryFormProps) {
     setError('')
 
     try {
-      await entryApi.submitTime({
+      const payload: {
+        legNumber: number
+        clockTime: number
+        kills: number
+        adjustedDistance?: number
+      } = {
         legNumber: selectedLeg.legNumber,
         clockTime,
         kills: parseInt(kills || '0'),
-      })
+      }
+
+      // Include adjusted distance for exchange zone leg 12
+      if (isExchangeLeg && distanceAdjustment !== 0) {
+        payload.adjustedDistance = effectiveLeg12Distance!
+      }
+
+      await entryApi.submitTime(payload)
       // Reset form and clear selected leg so useEffect picks the next one after refetch
       setHours('')
       setMinutes('')
       setSeconds('')
       setKills('')
+      setDistanceAdjustment(0)
       setSelectedLeg(null)
       await queryClient.refetchQueries({ queryKey: ['runner-legs'] })
       onSuccess()
@@ -89,6 +129,8 @@ export default function TimeEntryForm({ onSuccess }: TimeEntryFormProps) {
           {legs.map((leg) => {
             const isCompleted = completedLegNumbers.includes(leg.legNumber)
             const isSelected = selectedLeg?.id === leg.id
+            const adjDist = adjustedDistances[leg.legNumber]
+            const displayDistance = adjDist ?? leg.distance
 
             return (
               <button
@@ -107,7 +149,12 @@ export default function TimeEntryForm({ onSuccess }: TimeEntryFormProps) {
                 <p className={`font-bold text-sm sm:text-base ${isCompleted ? 'text-green-600' : 'text-gray-900'}`}>
                   Leg {leg.legNumber}
                 </p>
-                <p className="text-xs sm:text-sm text-gray-500">{leg.distance} mi</p>
+                <p className="text-xs sm:text-sm text-gray-500">
+                  {displayDistance} mi
+                  {adjDist != null && adjDist !== leg.distance && (
+                    <span className="text-amber-600"> *</span>
+                  )}
+                </p>
                 {isCompleted && (
                   <span className="text-xs text-green-600">Done</span>
                 )}
@@ -125,9 +172,9 @@ export default function TimeEntryForm({ onSuccess }: TimeEntryFormProps) {
               Enter Time for Leg {selectedLeg.legNumber}
             </h3>
             <p className="text-xs sm:text-sm text-gray-500 mb-2 sm:mb-4">
-              {selectedLeg.distance} mi
+              {isExchangeLeg ? `${effectiveLeg12Distance} mi` : `${adjustedDistances[selectedLeg.legNumber] ?? selectedLeg.distance} mi`}
               {selectedLeg.startPoint && ` • ${selectedLeg.startPoint}`}
-              {selectedLeg.endPoint && ` → ${selectedLeg.endPoint}`}
+              {selectedLeg.endPoint && ` \u2192 ${selectedLeg.endPoint}`}
             </p>
 
             {error && (
@@ -184,6 +231,103 @@ export default function TimeEntryForm({ onSuccess }: TimeEntryFormProps) {
               </div>
             </div>
           </div>
+
+          {/* Exchange zone distance adjustment — only for leg 12 */}
+          {isExchangeLeg && (
+            <div className="card">
+              <h3 className="font-semibold text-gray-900 text-sm sm:text-base mb-1">
+                Exchange Zone Distance
+              </h3>
+              <p className="text-xs text-gray-500 mb-3">
+                Adjust where you exchanged with the Leg 13 runner. Use your watch distance.
+              </p>
+
+              <div className="space-y-3">
+                {/* Slider */}
+                <div>
+                  <input
+                    type="range"
+                    min={-EXCHANGE_MAX_ADJUSTMENT}
+                    max={EXCHANGE_MAX_ADJUSTMENT}
+                    step={EXCHANGE_STEP}
+                    value={distanceAdjustment}
+                    onChange={(e) => setDistanceAdjustment(parseFloat(e.target.value))}
+                    className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
+                  />
+                  <div className="flex justify-between text-xs text-gray-400 mt-1">
+                    <span>{(selectedLeg.distance - EXCHANGE_MAX_ADJUSTMENT).toFixed(1)} mi</span>
+                    <span>{selectedLeg.distance.toFixed(1)} mi</span>
+                    <span>{(selectedLeg.distance + EXCHANGE_MAX_ADJUSTMENT).toFixed(1)} mi</span>
+                  </div>
+                </div>
+
+                {/* Direct input */}
+                <div className="flex items-center justify-center gap-3">
+                  <label className="text-sm text-gray-700">Your distance:</label>
+                  <input
+                    type="number"
+                    inputMode="decimal"
+                    step="0.1"
+                    min={(selectedLeg.distance - EXCHANGE_MAX_ADJUSTMENT).toFixed(2)}
+                    max={(selectedLeg.distance + EXCHANGE_MAX_ADJUSTMENT).toFixed(2)}
+                    value={effectiveLeg12Distance?.toFixed(2) ?? ''}
+                    onChange={(e) => {
+                      const val = parseFloat(e.target.value)
+                      if (!isNaN(val)) {
+                        const offset = Math.max(
+                          -EXCHANGE_MAX_ADJUSTMENT,
+                          Math.min(EXCHANGE_MAX_ADJUSTMENT, val - selectedLeg.distance)
+                        )
+                        setDistanceAdjustment(Math.round(offset * 100) / 100)
+                      }
+                    }}
+                    className="input w-24 text-center text-lg font-mono"
+                  />
+                  <span className="text-sm text-gray-500">mi</span>
+                </div>
+
+                {/* Show impact on leg 13 */}
+                <div className={`rounded-lg p-3 text-center ${
+                  distanceAdjustment !== 0
+                    ? 'bg-amber-50 border border-amber-200'
+                    : 'bg-gray-50 border border-gray-200'
+                }`}>
+                  <div className="grid grid-cols-2 gap-4 text-sm">
+                    <div>
+                      <p className="text-gray-500">Leg 12 (you)</p>
+                      <p className="font-bold text-lg">{effectiveLeg12Distance?.toFixed(2)} mi</p>
+                      {distanceAdjustment !== 0 && (
+                        <p className="text-xs text-gray-400">
+                          base: {selectedLeg.distance} mi ({distanceAdjustment > 0 ? '+' : ''}{distanceAdjustment.toFixed(1)})
+                        </p>
+                      )}
+                    </div>
+                    <div>
+                      <p className="text-gray-500">Leg 13</p>
+                      <p className="font-bold text-lg">{effectiveLeg13Distance?.toFixed(2)} mi</p>
+                      {distanceAdjustment !== 0 && (
+                        <p className="text-xs text-gray-400">
+                          base: {leg13BaseDistance} mi ({distanceAdjustment > 0 ? '-' : '+'}{Math.abs(distanceAdjustment).toFixed(1)})
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                  {distanceAdjustment === 0 && (
+                    <p className="text-xs text-gray-400 mt-2">No adjustment - using default exchange point</p>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Leg 13 adjusted distance notice */}
+          {selectedLeg.legNumber === EXCHANGE_LEG_B && adjustedDistances[EXCHANGE_LEG_B] != null && (
+            <div className="card bg-amber-50 border-amber-200">
+              <p className="text-sm text-amber-800">
+                Your Leg 13 distance was adjusted to <strong>{adjustedDistances[EXCHANGE_LEG_B]} mi</strong> by the Leg 12 runner's exchange zone selection.
+              </p>
+            </div>
+          )}
 
           {/* Kills */}
           <div className="card">

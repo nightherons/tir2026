@@ -260,7 +260,7 @@ router.delete('/legs/:id', async (req, res) => {
 
 router.post('/entry', async (req, res) => {
   try {
-    const { runnerId, legNumber, clockTime, kills } = req.body
+    const { runnerId, legNumber, clockTime, kills, adjustedDistance } = req.body
 
     const leg = await prisma.leg.findUnique({
       where: { legNumber },
@@ -288,6 +288,7 @@ router.post('/entry', async (req, res) => {
       update: {
         clockTime,
         kills: kills || 0,
+        adjustedDistance: (legNumber === 12 || legNumber === 13) ? (adjustedDistance ?? null) : undefined,
         enteredBy: 'admin',
       },
       create: {
@@ -295,6 +296,7 @@ router.post('/entry', async (req, res) => {
         runnerId,
         clockTime,
         kills: kills || 0,
+        adjustedDistance: (legNumber === 12 || legNumber === 13) ? (adjustedDistance ?? null) : undefined,
         enteredBy: 'admin',
       },
       include: {
@@ -302,6 +304,29 @@ router.post('/entry', async (req, res) => {
         runner: { include: { team: true } },
       },
     })
+
+    // Sync exchange zone if leg 12 was adjusted
+    if (legNumber === 12 && adjustedDistance != null) {
+      const leg13 = await prisma.leg.findUnique({ where: { legNumber: 13 } })
+      if (leg13) {
+        const combinedDistance = leg.distance + leg13.distance
+        const leg13Adjusted = Math.round((combinedDistance - adjustedDistance) * 100) / 100
+        const teamRunners = await prisma.runner.findMany({ where: { teamId: runner.teamId } })
+        const { getRunnerLegNumbers } = await import('../utils/legAssignments.js')
+        const leg13Runner = teamRunners.find(r => getRunnerLegNumbers(r).includes(13))
+        if (leg13Runner) {
+          const existing = await prisma.legResult.findUnique({
+            where: { legId_runnerId: { legId: leg13.id, runnerId: leg13Runner.id } },
+          })
+          if (existing) {
+            await prisma.legResult.update({
+              where: { id: existing.id },
+              data: { adjustedDistance: leg13Adjusted },
+            })
+          }
+        }
+      }
+    }
 
     const io: Server = req.app.get('io')
     emitTimeEntered(io, {

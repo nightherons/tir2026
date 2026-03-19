@@ -47,6 +47,7 @@ export interface LegResult {
   startTime?: string
   endTime?: string
   kills: number
+  adjustedDistance?: number | null // per-team override for exchange zone legs (12/13)
   enteredBy: 'runner' | 'captain' | 'admin'
   createdAt: string
   updatedAt: string

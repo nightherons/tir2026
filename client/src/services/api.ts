@@ -42,6 +42,7 @@ export const entryApi = {
     legNumber: number
     clockTime: number
     kills: number
+    adjustedDistance?: number
   }) => api.post('/entry/time', data),
 
   submitVanTime: (data: {
@@ -49,6 +50,7 @@ export const entryApi = {
     legNumber: number
     clockTime: number
     kills: number
+    adjustedDistance?: number
   }) => api.post('/entry/van', data),
 }
 
@@ -104,6 +106,7 @@ export const adminApi = {
     legNumber: number
     clockTime: number
     kills: number
+    adjustedDistance?: number
   }) => api.post('/admin/entry', data),
   deleteTime: (id: string) => api.delete(`/admin/entry/${id}`),
 
