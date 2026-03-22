@@ -30,7 +30,9 @@ export default function TimeEntryForm({ onSuccess }: TimeEntryFormProps) {
 
   const legs: Leg[] = legsData?.data?.data?.legs || []
   const completedLegNumbers: number[] = legsData?.data?.data?.completedLegs || []
+  const existingResults: Record<number, { clockTime: number; kills: number }> = legsData?.data?.data?.existingResults || {}
   const adjustedDistances: Record<number, number> = legsData?.data?.data?.adjustedDistances || {}
+  const [isEditing, setIsEditing] = useState(false)
 
   // Auto-select next incomplete leg
   useEffect(() => {
@@ -42,10 +44,33 @@ export default function TimeEntryForm({ onSuccess }: TimeEntryFormProps) {
     }
   }, [legs, completedLegNumbers, selectedLeg])
 
-  // Reset distance adjustment when leg changes
+  // Reset distance adjustment and editing state when leg changes
   useEffect(() => {
     setDistanceAdjustment(0)
   }, [selectedLeg?.id])
+
+  // Pre-populate form when editing a completed leg
+  const handleSelectLeg = (leg: Leg) => {
+    const isCompleted = completedLegNumbers.includes(leg.legNumber)
+    setSelectedLeg(leg)
+    if (isCompleted && existingResults[leg.legNumber]) {
+      const { clockTime, kills: existingKills } = existingResults[leg.legNumber]
+      const h = Math.floor(clockTime / 3600)
+      const m = Math.floor((clockTime % 3600) / 60)
+      const s = clockTime % 60
+      setHours(h > 0 ? h.toString() : '')
+      setMinutes(m > 0 ? m.toString() : '')
+      setSeconds(s > 0 ? s.toString() : '')
+      setKills(existingKills > 0 ? existingKills.toString() : '')
+      setIsEditing(true)
+    } else {
+      setHours('')
+      setMinutes('')
+      setSeconds('')
+      setKills('')
+      setIsEditing(false)
+    }
+  }
 
   const isExchangeLeg = selectedLeg?.legNumber === EXCHANGE_LEG_A
 
@@ -102,6 +127,7 @@ export default function TimeEntryForm({ onSuccess }: TimeEntryFormProps) {
       setSeconds('')
       setKills('')
       setDistanceAdjustment(0)
+      setIsEditing(false)
       setSelectedLeg(null)
       await queryClient.refetchQueries({ queryKey: ['runner-legs'] })
       onSuccess()
@@ -136,17 +162,18 @@ export default function TimeEntryForm({ onSuccess }: TimeEntryFormProps) {
               <button
                 key={leg.id}
                 type="button"
-                onClick={() => !isCompleted && setSelectedLeg(leg)}
-                disabled={isCompleted}
+                onClick={() => handleSelectLeg(leg)}
                 className={`p-2 sm:p-3 rounded-lg border-2 text-center transition-all ${
                   isCompleted
-                    ? 'border-green-200 bg-green-50 cursor-not-allowed'
+                    ? isSelected
+                      ? 'border-amber-500 bg-amber-50'
+                      : 'border-green-200 bg-green-50 hover:border-amber-300'
                     : isSelected
                     ? 'border-blue-500 bg-blue-50'
                     : 'border-gray-200 hover:border-gray-300'
                 }`}
               >
-                <p className={`font-bold text-sm sm:text-base ${isCompleted ? 'text-green-600' : 'text-gray-900'}`}>
+                <p className={`font-bold text-sm sm:text-base ${isCompleted ? (isSelected ? 'text-amber-600' : 'text-green-600') : 'text-gray-900'}`}>
                   Leg {leg.legNumber}
                 </p>
                 <p className="text-xs sm:text-sm text-gray-500">
@@ -156,7 +183,9 @@ export default function TimeEntryForm({ onSuccess }: TimeEntryFormProps) {
                   )}
                 </p>
                 {isCompleted && (
-                  <span className="text-xs text-green-600">Done</span>
+                  <span className={`text-xs ${isSelected ? 'text-amber-600' : 'text-green-600'}`}>
+                    {isSelected ? 'Editing' : 'Done'}
+                  </span>
                 )}
               </button>
             )
@@ -169,7 +198,7 @@ export default function TimeEntryForm({ onSuccess }: TimeEntryFormProps) {
           {/* Time entry */}
           <div className="card">
             <h3 className="font-semibold text-gray-900 text-sm sm:text-base">
-              Enter Time for Leg {selectedLeg.legNumber}
+              {isEditing ? 'Edit' : 'Enter'} Time for Leg {selectedLeg.legNumber}
             </h3>
             <p className="text-xs sm:text-sm text-gray-500 mb-2 sm:mb-4">
               {isExchangeLeg ? `${effectiveLeg12Distance} mi` : `${adjustedDistances[selectedLeg.legNumber] ?? selectedLeg.distance} mi`}
@@ -370,14 +399,14 @@ export default function TimeEntryForm({ onSuccess }: TimeEntryFormProps) {
             disabled={isSubmitting}
             className="w-full btn-primary py-3 sm:py-4 text-base sm:text-lg"
           >
-            {isSubmitting ? 'Submitting...' : 'Submit Time'}
+            {isSubmitting ? 'Submitting...' : isEditing ? 'Update Time' : 'Submit Time'}
           </button>
         </>
       )}
 
-      {!selectedLeg && legs.length > 0 && (
-        <div className="text-center py-8 text-gray-500">
-          All your legs have been completed!
+      {!selectedLeg && legs.length > 0 && completedLegNumbers.length === legs.length && (
+        <div className="text-center py-4 text-gray-500 text-sm">
+          All legs completed. Tap a leg above to edit.
         </div>
       )}
     </div>

@@ -36,6 +36,15 @@ router.get('/legs', authMiddleware, runnerAuth, async (req, res) => {
 
     const completedLegs = runner.legResults.map((r) => r.leg.legNumber)
 
+    // Include existing result data for editing
+    const existingResults: Record<number, { clockTime: number; kills: number }> = {}
+    for (const result of runner.legResults) {
+      existingResults[result.leg.legNumber] = {
+        clockTime: result.clockTime,
+        kills: result.kills,
+      }
+    }
+
     // Include adjustedDistance info for exchange zone legs
     const adjustedDistances: Record<number, number> = {}
     for (const result of runner.legResults) {
@@ -70,6 +79,7 @@ router.get('/legs', authMiddleware, runnerAuth, async (req, res) => {
       data: {
         legs,
         completedLegs,
+        existingResults,
         adjustedDistances,
       },
     })
