@@ -13,7 +13,8 @@ import {
 } from 'recharts'
 import type { TeamStanding } from '../../types'
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card'
-import { zoneBands, getZoneName, formatDeviation } from '../../utils/zones'
+import { ChevronDown } from 'lucide-react'
+import { zoneBands, getZoneName, formatDeviation, zoneStyles } from '../../utils/zones'
 
 interface PaceChartProps {
   standings: TeamStanding[]
@@ -28,8 +29,19 @@ const teamChartColors: Record<string, string> = {
   GREEN: '#16a34a',
 }
 
+const zoneGuide = [
+  { zone: 'Sandbagged', range: '> +10%', desc: 'Clearly lowballed projection' },
+  { zone: 'Humble', range: '+5% to +10%', desc: 'Undersold themselves' },
+  { zone: 'Dialed In', range: '+1% to +5%', desc: 'Knew their ability, slightly exceeded' },
+  { zone: 'On the Nose', range: '±1%', desc: 'Nailed the projection' },
+  { zone: 'Optimistic', range: '-1% to -5%', desc: 'Slightly ambitious' },
+  { zone: 'Overconfident', range: '-5% to -10%', desc: 'Projected too aggressively' },
+  { zone: 'Delusional', range: '> -10%', desc: 'Fantasy pace' },
+] as const
+
 export default function PaceChart({ standings }: PaceChartProps) {
   const [isMobile, setIsMobile] = useState(window.innerWidth < 640)
+  const [showGuide, setShowGuide] = useState(false)
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth < 640)
     window.addEventListener('resize', handleResize)
@@ -160,6 +172,32 @@ export default function PaceChart({ standings }: PaceChartProps) {
               ))}
             </LineChart>
           </ResponsiveContainer>
+        </div>
+        {/* Collapsible zone guide */}
+        <div className="mt-3 border-t pt-2">
+          <button
+            onClick={() => setShowGuide(!showGuide)}
+            className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+          >
+            <ChevronDown className={`h-3 w-3 transition-transform ${showGuide ? 'rotate-180' : ''}`} />
+            Zone Guide
+          </button>
+          {showGuide && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1 mt-2 text-xs">
+              {zoneGuide.map(({ zone, range, desc }) => {
+                const style = zoneStyles[zone]
+                return (
+                  <div key={zone} className="flex items-center gap-2 py-0.5">
+                    <span className={`inline-block px-1.5 py-0.5 rounded font-medium ${style.bg} ${style.color}`}>
+                      {zone}
+                    </span>
+                    <span className="text-muted-foreground font-mono">{range}</span>
+                    <span className="text-muted-foreground hidden sm:inline">— {desc}</span>
+                  </div>
+                )
+              })}
+            </div>
+          )}
         </div>
       </CardContent>
     </Card>
