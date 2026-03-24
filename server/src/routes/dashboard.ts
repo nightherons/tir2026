@@ -496,8 +496,9 @@ router.get('/debug', async (req, res) => {
         const legTime = actualTime || pace * distance
         totalSeconds += legTime
 
-        const paceMin = Math.floor(pace / 60)
-        const paceSec = Math.round(pace % 60)
+        const paceRounded = Math.round(pace)
+        const paceMin = Math.floor(paceRounded / 60)
+        const paceSec = paceRounded % 60
 
         legBreakdown.push({
           leg: legNum,
@@ -506,7 +507,7 @@ router.get('/debug', async (req, res) => {
           pacePerMile: `${paceMin}:${paceSec.toString().padStart(2, '0')}`,
           paceSeconds: pace,
           legTimeSeconds: Math.round(legTime),
-          legTimeFormatted: `${Math.floor(legTime / 60)}:${Math.round(legTime % 60).toString().padStart(2, '0')}`,
+          legTimeFormatted: `${Math.floor(Math.round(legTime) / 60)}:${(Math.round(legTime) % 60).toString().padStart(2, '0')}`,
           source: actualTime ? 'actual' : 'projected',
         })
       }
@@ -517,9 +518,10 @@ router.get('/debug', async (req, res) => {
         projectedFinish = finishDate.toISOString()
       }
 
-      const totalHours = Math.floor(totalSeconds / 3600)
-      const totalMins = Math.floor((totalSeconds % 3600) / 60)
-      const totalSecs = Math.round(totalSeconds % 60)
+      const totalRounded = Math.round(totalSeconds)
+      const totalHours = Math.floor(totalRounded / 3600)
+      const totalMins = Math.floor((totalRounded % 3600) / 60)
+      const totalSecs = totalRounded % 60
 
       return {
         team: team.name,
@@ -529,7 +531,7 @@ router.get('/debug', async (req, res) => {
           van: r.vanNumber,
           order: r.runOrder,
           paceSeconds: r.projectedPace,
-          pace: `${Math.floor(r.projectedPace / 60)}:${Math.round(r.projectedPace % 60).toString().padStart(2, '0')}/mi`,
+          pace: `${Math.floor(Math.round(r.projectedPace) / 60)}:${(Math.round(r.projectedPace) % 60).toString().padStart(2, '0')}/mi`,
           assignedLegs: getRunnerLegNumbers(r),
           customAssignments: r.legAssignments || null,
         })),
