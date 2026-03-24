@@ -1,4 +1,4 @@
-export type ZoneName = 'Sandbagged' | 'Humble' | 'Dialed In' | 'On the Nose' | 'Optimistic' | 'Overconfident'
+export type ZoneName = 'Sandbagged' | 'Humble' | 'Dialed In' | 'On the Nose' | 'Optimistic' | 'Overconfident' | 'Delusional'
 
 export interface ZoneInfo {
   deviation: number // positive = faster than projected
@@ -30,8 +30,9 @@ export function getZoneName(deviation: number): ZoneName {
   if (deviation > 5) return 'Humble'
   if (deviation > 1) return 'Dialed In'
   if (deviation >= -1) return 'On the Nose'
-  if (deviation >= -10) return 'Optimistic'
-  return 'Overconfident'
+  if (deviation >= -5) return 'Optimistic'
+  if (deviation >= -10) return 'Overconfident'
+  return 'Delusional'
 }
 
 export const zoneStyles: Record<ZoneName, { color: string; bg: string }> = {
@@ -40,7 +41,8 @@ export const zoneStyles: Record<ZoneName, { color: string; bg: string }> = {
   'Dialed In': { color: 'text-green-700 dark:text-green-400', bg: 'bg-green-100 dark:bg-green-900/30' },
   'On the Nose': { color: 'text-gray-700 dark:text-gray-400', bg: 'bg-gray-100 dark:bg-gray-800/30' },
   'Optimistic': { color: 'text-amber-700 dark:text-amber-400', bg: 'bg-amber-100 dark:bg-amber-900/30' },
-  'Overconfident': { color: 'text-red-700 dark:text-red-400', bg: 'bg-red-100 dark:bg-red-900/30' },
+  'Overconfident': { color: 'text-orange-700 dark:text-orange-400', bg: 'bg-orange-100 dark:bg-orange-900/30' },
+  'Delusional': { color: 'text-red-700 dark:text-red-400', bg: 'bg-red-100 dark:bg-red-900/30' },
 }
 
 /** Zone boundaries for chart reference areas (deviation %) */
@@ -49,8 +51,9 @@ export const zoneBands = [
   { zone: 'Humble' as ZoneName, min: 5, max: 10, fill: '#dbeafe' },
   { zone: 'Dialed In' as ZoneName, min: 1, max: 5, fill: '#dcfce7' },
   { zone: 'On the Nose' as ZoneName, min: -1, max: 1, fill: '#f3f4f6' },
-  { zone: 'Optimistic' as ZoneName, min: -10, max: -1, fill: '#fef3c7' },
-  { zone: 'Overconfident' as ZoneName, min: -30, max: -10, fill: '#fee2e2' },
+  { zone: 'Optimistic' as ZoneName, min: -5, max: -1, fill: '#fef3c7' },
+  { zone: 'Overconfident' as ZoneName, min: -10, max: -5, fill: '#fed7aa' },
+  { zone: 'Delusional' as ZoneName, min: -30, max: -10, fill: '#fee2e2' },
 ]
 
 export function formatDeviation(deviation: number): string {

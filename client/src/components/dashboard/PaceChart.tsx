@@ -74,7 +74,7 @@ export default function PaceChart({ standings }: PaceChartProps) {
     return (
       <Card>
         <CardHeader>
-          <CardTitle>Accuracy by Leg</CardTitle>
+          <CardTitle>Projection Accuracy by Leg</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="h-64 flex items-center justify-center text-muted-foreground">
@@ -91,8 +91,8 @@ export default function PaceChart({ standings }: PaceChartProps) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Accuracy by Leg</CardTitle>
-        <p className="text-sm text-muted-foreground">% deviation from projected pace per leg</p>
+        <CardTitle>Projection Accuracy by Leg</CardTitle>
+        <p className="text-sm text-muted-foreground">Actual vs projected pace per leg</p>
       </CardHeader>
       <CardContent>
         <div className="h-56 sm:h-72 lg:h-80">
