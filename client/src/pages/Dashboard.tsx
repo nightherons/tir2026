@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { dashboardApi, api } from '../services/api'
 import { useSocketStore } from '../store/socketStore'
+import { queryClient } from '../lib/queryClient'
 import type { TeamStanding, Leg } from '../types'
 import Leaderboard from '../components/dashboard/Leaderboard'
 import TeamProgress from '../components/dashboard/TeamProgress'
@@ -64,7 +65,10 @@ export default function Dashboard() {
     })
 
     const unsubTime = onTimeEntered(() => {
-      // Could trigger a refetch or update specific data
+      queryClient.invalidateQueries({ queryKey: ['dashboard'] })
+      queryClient.invalidateQueries({ queryKey: ['leg-winners'] })
+      queryClient.invalidateQueries({ queryKey: ['teamDetail'] })
+      queryClient.invalidateQueries({ queryKey: ['runner-details'] })
     })
 
     return () => {

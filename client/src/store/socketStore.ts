@@ -34,6 +34,7 @@ export const useSocketStore = create<SocketState>((set, get) => ({
 
     socket.on('connect', () => {
       set({ isConnected: true })
+      socket.emit('join:dashboard')
       console.log('Socket connected')
     })
 
