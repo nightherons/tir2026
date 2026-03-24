@@ -47,13 +47,13 @@ export const zoneStyles: Record<ZoneName, { color: string; bg: string }> = {
 
 /** Zone boundaries for chart reference areas (deviation %) */
 export const zoneBands = [
-  { zone: 'Sandbagged' as ZoneName, min: 10, max: 30, fill: '#e9d5ff' },
+  { zone: 'Sandbagged' as ZoneName, min: 10, max: 20, fill: '#e9d5ff' },
   { zone: 'Humble' as ZoneName, min: 5, max: 10, fill: '#dbeafe' },
   { zone: 'Dialed In' as ZoneName, min: 1, max: 5, fill: '#dcfce7' },
   { zone: 'On the Nose' as ZoneName, min: -1, max: 1, fill: '#f3f4f6' },
   { zone: 'Optimistic' as ZoneName, min: -5, max: -1, fill: '#fef3c7' },
   { zone: 'Overconfident' as ZoneName, min: -10, max: -5, fill: '#fed7aa' },
-  { zone: 'Delusional' as ZoneName, min: -30, max: -10, fill: '#fee2e2' },
+  { zone: 'Delusional' as ZoneName, min: -20, max: -10, fill: '#fee2e2' },
 ]
 
 export function formatDeviation(deviation: number): string {

@@ -54,21 +54,9 @@ export default function PaceChart({ standings }: PaceChartProps) {
     return data
   }, [standings, maxCompletedLeg])
 
-  // Compute Y-axis range from data
-  const yRange = useMemo(() => {
-    let min = -10
-    let max = 10
-    for (const point of chartData) {
-      for (const key of Object.keys(point)) {
-        if (key === 'leg') continue
-        const val = point[key] as number
-        if (val < min) min = val
-        if (val > max) max = val
-      }
-    }
-    // Pad a bit and round to nearest 5
-    return [Math.floor((min - 2) / 5) * 5, Math.ceil((max + 2) / 5) * 5]
-  }, [chartData])
+  // Fixed Y-axis range with zone boundary ticks
+  const yRange: [number, number] = [-20, 20]
+  const yTicks = [-20, -10, -5, -1, 0, 1, 5, 10, 20]
 
   if (maxCompletedLeg === 0) {
     return (
@@ -99,26 +87,21 @@ export default function PaceChart({ standings }: PaceChartProps) {
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={chartData} margin={{ top: 5, right: 5, bottom: 20, left: 0 }}>
               {/* Zone bands */}
-              {zoneBands.map(band => {
-                const clampedMin = Math.max(band.min, yRange[0])
-                const clampedMax = Math.min(band.max, yRange[1])
-                if (clampedMin >= clampedMax) return null
-                return (
-                  <ReferenceArea
-                    key={band.zone}
-                    y1={clampedMin}
-                    y2={clampedMax}
-                    fill={band.fill}
-                    fillOpacity={0.4}
-                    label={{
-                      value: band.zone,
-                      position: 'insideRight',
-                      fontSize: 9,
-                      fill: '#9ca3af',
-                    }}
-                  />
-                )
-              })}
+              {zoneBands.map(band => (
+                <ReferenceArea
+                  key={band.zone}
+                  y1={band.min}
+                  y2={band.max}
+                  fill={band.fill}
+                  fillOpacity={0.4}
+                  label={{
+                    value: band.zone,
+                    position: 'insideRight',
+                    fontSize: 9,
+                    fill: '#9ca3af',
+                  }}
+                />
+              ))}
               <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
               <XAxis
                 dataKey="leg"
@@ -126,16 +109,11 @@ export default function PaceChart({ standings }: PaceChartProps) {
                 label={{ value: 'Leg', position: 'insideBottom', offset: -10 }}
               />
               <YAxis
-                label={{
-                  value: 'Deviation %',
-                  angle: -90,
-                  position: 'insideLeft',
-                  style: { textAnchor: 'middle', fontSize: 11 },
-                }}
                 domain={yRange}
-                tick={{ fontSize: 10 }}
-                tickFormatter={(value) => `${value > 0 ? '+' : ''}${value}%`}
-                width={50}
+                ticks={yTicks}
+                tick={{ fontSize: 9 }}
+                tickFormatter={(value: number) => `${value > 0 ? '+' : ''}${value}%`}
+                width={46}
               />
               <ReferenceLine y={0} stroke="hsl(var(--foreground))" strokeOpacity={0.3} />
               <Tooltip
