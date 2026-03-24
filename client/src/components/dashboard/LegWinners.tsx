@@ -5,6 +5,7 @@ import { api } from '@/services/api'
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card'
 import { Badge } from '../ui/badge'
 import { cn } from '@/lib/utils'
+import { calculateZone } from '@/utils/zones'
 
 interface LegResult {
   runnerId: string
@@ -12,6 +13,7 @@ interface LegResult {
   teamName: string
   clockTime: number
   pace: number
+  projectedPace: number
   kills: number
   rank: number
 }
@@ -44,6 +46,16 @@ function getRankBadge(rank: number) {
   if (rank === 2) return <Medal className="h-4 w-4 text-gray-400" />
   if (rank === 3) return <Medal className="h-4 w-4 text-amber-600" />
   return <span className="text-xs text-muted-foreground w-4 text-center">{rank}</span>
+}
+
+function ZoneBadge({ result, distance }: { result: LegResult; distance: number }) {
+  const projectedTime = result.projectedPace * distance
+  const zone = calculateZone(result.clockTime, projectedTime)
+  return (
+    <span className={`text-xs shrink-0 hidden sm:inline ${zone.color}`}>
+      {zone.zone === 'On the Nose' ? 'OTN' : zone.zone}
+    </span>
+  )
 }
 
 function LegCard({ leg }: { leg: LegWithResults }) {
@@ -97,6 +109,7 @@ function LegCard({ leg }: { leg: LegWithResults }) {
               <Badge variant="secondary" className="text-xs shrink-0 hidden sm:inline-flex">{winner.teamName}</Badge>
               <span className="font-mono text-xs sm:text-sm shrink-0">{formatTime(winner.clockTime)}</span>
               <span className="text-xs text-muted-foreground shrink-0 hidden sm:inline">{formatPace(winner.pace)}</span>
+              <ZoneBadge result={winner} distance={leg.distance} />
               <span className="shrink-0 text-xs hidden sm:inline">
                 {winner.kills > 0 ? <span className="text-amber-600">+{winner.kills}</span> : '—'}
               </span>
@@ -109,6 +122,7 @@ function LegCard({ leg }: { leg: LegWithResults }) {
                 <Badge variant="outline" className="text-xs shrink-0 hidden sm:inline-flex">{result.teamName}</Badge>
                 <span className="font-mono text-xs sm:text-sm shrink-0">{formatTime(result.clockTime)}</span>
                 <span className="text-xs text-muted-foreground shrink-0 hidden sm:inline">{formatPace(result.pace)}</span>
+                <ZoneBadge result={result} distance={leg.distance} />
                 <span className="shrink-0 text-xs hidden sm:inline">
                   {result.kills > 0 ? <span className="text-amber-600">+{result.kills}</span> : '—'}
                 </span>

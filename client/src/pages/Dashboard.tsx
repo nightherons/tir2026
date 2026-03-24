@@ -137,8 +137,8 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Pace chart */}
-      <PaceChart standings={standings} legs={legsData || []} />
+      {/* Accuracy by leg chart */}
+      <PaceChart standings={standings} />
     </div>
   )
 }

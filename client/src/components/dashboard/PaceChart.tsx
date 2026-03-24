@@ -9,13 +9,14 @@ import {
   Legend,
   ResponsiveContainer,
   ReferenceLine,
+  ReferenceArea,
 } from 'recharts'
-import type { TeamStanding, Leg } from '../../types'
+import type { TeamStanding } from '../../types'
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card'
+import { zoneBands, getZoneName, formatDeviation } from '../../utils/zones'
 
 interface PaceChartProps {
   standings: TeamStanding[]
-  legs: Leg[]
 }
 
 const teamChartColors: Record<string, string> = {
@@ -27,15 +28,7 @@ const teamChartColors: Record<string, string> = {
   GREEN: '#16a34a',
 }
 
-export default function PaceChart({ standings, legs }: PaceChartProps) {
-  const legDistances = useMemo(() => {
-    const map = new Map<number, number>()
-    for (const leg of legs) {
-      map.set(leg.legNumber, leg.distance)
-    }
-    return map
-  }, [legs])
-
+export default function PaceChart({ standings }: PaceChartProps) {
   // Determine max completed leg across all teams (only show actual data)
   const maxCompletedLeg = useMemo(() => {
     return Math.max(...standings.map(s => s.completedLegs), 0)
@@ -48,30 +41,44 @@ export default function PaceChart({ standings, legs }: PaceChartProps) {
     for (let leg = 1; leg <= maxCompletedLeg; leg++) {
       const point: Record<string, unknown> = { leg }
       for (const standing of standings) {
-        if (standing.legTimings && standing.legTimings.length >= leg) {
-          const timeSeconds = standing.legTimings[leg - 1]
-          const distance = legDistances.get(leg) || 5
-          // Only include if this leg is completed for this team
-          if (leg <= standing.completedLegs) {
-            const paceMinPerMile = (timeSeconds / distance) / 60
-            point[standing.team.name] = Math.round(paceMinPerMile * 100) / 100
-          }
+        const actual = standing.legTimings?.[leg - 1]
+        const projected = standing.legProjectedTimes?.[leg - 1]
+        // Only include completed legs
+        if (leg <= standing.completedLegs && actual && projected && projected > 0) {
+          const deviation = ((projected - actual) / projected) * 100
+          point[standing.team.name] = Math.round(deviation * 10) / 10
         }
       }
       data.push(point)
     }
     return data
-  }, [standings, legDistances, maxCompletedLeg])
+  }, [standings, maxCompletedLeg])
+
+  // Compute Y-axis range from data
+  const yRange = useMemo(() => {
+    let min = -10
+    let max = 10
+    for (const point of chartData) {
+      for (const key of Object.keys(point)) {
+        if (key === 'leg') continue
+        const val = point[key] as number
+        if (val < min) min = val
+        if (val > max) max = val
+      }
+    }
+    // Pad a bit and round to nearest 5
+    return [Math.floor((min - 2) / 5) * 5, Math.ceil((max + 2) / 5) * 5]
+  }, [chartData])
 
   if (maxCompletedLeg === 0) {
     return (
       <Card>
         <CardHeader>
-          <CardTitle>Pace Over Time</CardTitle>
+          <CardTitle>Accuracy by Leg</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="h-64 flex items-center justify-center text-muted-foreground">
-            Pace chart will appear as race progresses
+            Accuracy chart will appear as race progresses
           </div>
         </CardContent>
       </Card>
@@ -84,13 +91,34 @@ export default function PaceChart({ standings, legs }: PaceChartProps) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Pace Over Time</CardTitle>
-        <p className="text-sm text-muted-foreground">Actual pace (min/mile) by completed leg</p>
+        <CardTitle>Accuracy by Leg</CardTitle>
+        <p className="text-sm text-muted-foreground">% deviation from projected pace per leg</p>
       </CardHeader>
       <CardContent>
         <div className="h-56 sm:h-72 lg:h-80">
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={chartData} margin={{ top: 5, right: 5, bottom: 20, left: 0 }}>
+              {/* Zone bands */}
+              {zoneBands.map(band => {
+                const clampedMin = Math.max(band.min, yRange[0])
+                const clampedMax = Math.min(band.max, yRange[1])
+                if (clampedMin >= clampedMax) return null
+                return (
+                  <ReferenceArea
+                    key={band.zone}
+                    y1={clampedMin}
+                    y2={clampedMax}
+                    fill={band.fill}
+                    fillOpacity={0.4}
+                    label={{
+                      value: band.zone,
+                      position: 'insideRight',
+                      fontSize: 9,
+                      fill: '#9ca3af',
+                    }}
+                  />
+                )
+              })}
               <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
               <XAxis
                 dataKey="leg"
@@ -99,20 +127,20 @@ export default function PaceChart({ standings, legs }: PaceChartProps) {
               />
               <YAxis
                 label={{
-                  value: 'Pace (min/mi)',
+                  value: 'Deviation %',
                   angle: -90,
                   position: 'insideLeft',
                   style: { textAnchor: 'middle', fontSize: 11 },
                 }}
-                domain={['auto', 'auto']}
+                domain={yRange}
                 tick={{ fontSize: 10 }}
-                tickFormatter={(value) => value.toFixed(1)}
-                reversed
-                width={45}
+                tickFormatter={(value) => `${value > 0 ? '+' : ''}${value}%`}
+                width={50}
               />
+              <ReferenceLine y={0} stroke="hsl(var(--foreground))" strokeOpacity={0.3} />
               <Tooltip
                 formatter={(value: number, name: string) => [
-                  `${Math.floor(value)}:${Math.round((value % 1) * 60).toString().padStart(2, '0')}/mi`,
+                  `${formatDeviation(value)} (${getZoneName(value)})`,
                   name,
                 ]}
                 labelFormatter={(label) => `Leg ${label}`}

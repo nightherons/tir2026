@@ -66,7 +66,8 @@ export interface TeamStanding {
   totalKills: number
   rank: number
   milesCompleted?: number
-  legTimings?: number[] // seconds per leg (36 entries)
+  legTimings?: number[] // seconds per leg (36 entries, actual or projected)
+  legProjectedTimes?: number[] // seconds per leg (36 entries, always from projected pace)
 }
 
 export interface DashboardData {

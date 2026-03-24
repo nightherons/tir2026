@@ -5,6 +5,7 @@ import type { TeamStanding } from '../../types'
 import { dashboardApi } from '../../services/api'
 import { formatPaceDiff, formatPaceDiffShort, formatTime, formatPace } from '../../utils/time'
 import { getRunnerLegNumbers } from '../../utils/legAssignments'
+import { calculateZone } from '../../utils/zones'
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card'
 import { Badge } from '../ui/badge'
 import { cn } from '@/lib/utils'
@@ -97,6 +98,9 @@ function TeamDetail({ teamId }: { teamId: string }) {
               <div className="flex flex-wrap gap-2">
                 {legNums.map(legNum => {
                   const result = runner.legResults.find(r => r.leg.legNumber === legNum)
+                  const zone = result?.clockTime
+                    ? calculateZone(result.clockTime, runner.projectedPace * result.leg.distance)
+                    : null
                   return (
                     <div
                       key={legNum}
@@ -114,6 +118,11 @@ function TeamDetail({ teamId }: { teamId: string }) {
                           {result.kills > 0 && (
                             <span className="ml-1 text-amber-600 dark:text-amber-400">
                               {result.kills}K
+                            </span>
+                          )}
+                          {zone && (
+                            <span className={`ml-1 ${zone.color}`}>
+                              {zone.zone === 'On the Nose' ? 'OTN' : zone.zone}
                             </span>
                           )}
                         </>

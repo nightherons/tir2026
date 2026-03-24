@@ -86,15 +86,18 @@ router.get('/', async (req, res) => {
 
       const DEFAULT_PACE = 600 // 10 min/mile fallback
       const legTimings: number[] = []
+      const legProjectedTimes: number[] = []
       for (let legNum = 1; legNum <= 36; legNum++) {
         const actualTime = resultsByLeg.get(legNum)
+        const runner = runnerByLeg.get(legNum)
+        const pace = runner?.projectedPace || DEFAULT_PACE
+        const distance = getDistance(legNum)
+        const projectedTime = pace * distance
+        legProjectedTimes.push(projectedTime)
         if (actualTime) {
           legTimings.push(actualTime)
         } else {
-          const runner = runnerByLeg.get(legNum)
-          const pace = runner?.projectedPace || DEFAULT_PACE
-          const distance = getDistance(legNum)
-          legTimings.push(pace * distance)
+          legTimings.push(projectedTime)
         }
       }
 
@@ -198,6 +201,7 @@ router.get('/', async (req, res) => {
         totalKills,
         rank: 0,
         legTimings,
+        legProjectedTimes,
       }
     })
 
@@ -393,6 +397,7 @@ router.get('/leg-results', async (req, res) => {
           clockTime: result.clockTime,
           adjustedDistance: result.adjustedDistance,
           pace: result.clockTime / effectiveDistance,
+          projectedPace: result.runner.projectedPace,
           kills: result.kills,
           rank: index + 1,
         }
