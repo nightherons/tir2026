@@ -5,7 +5,7 @@ import type { TeamStanding } from '../../types'
 import { dashboardApi } from '../../services/api'
 import { formatPaceDiff, formatPaceDiffShort, formatTime, formatPace } from '../../utils/time'
 import { getRunnerLegNumbers } from '../../utils/legAssignments'
-import { calculateZone } from '../../utils/zones'
+import { calculateZone, zoneDotColors } from '../../utils/zones'
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card'
 import { Badge } from '../ui/badge'
 import { cn } from '@/lib/utils'
@@ -121,9 +121,12 @@ function TeamDetail({ teamId }: { teamId: string }) {
                             </span>
                           )}
                           {zone && (
-                            <span className={`ml-1 ${zone.color}`}>
-                              {zone.zone === 'On the Nose' ? 'OTN' : zone.zone}
-                            </span>
+                            <>
+                              <span className={`ml-1 ${zone.color} hidden sm:inline`}>
+                                {zone.zone === 'On the Nose' ? 'OTN' : zone.zone}
+                              </span>
+                              <span className={`ml-0.5 inline-block w-1.5 h-1.5 rounded-full sm:hidden ${zoneDotColors[zone.zone]}`} />
+                            </>
                           )}
                         </>
                       ) : (

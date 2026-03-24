@@ -56,6 +56,16 @@ export const zoneBands = [
   { zone: 'Delusional' as ZoneName, min: -20, max: -10, fill: '#fee2e2' },
 ]
 
+export const zoneDotColors: Record<ZoneName, string> = {
+  'Sandbagged': 'bg-purple-500',
+  'Humble': 'bg-blue-500',
+  'Dialed In': 'bg-green-500',
+  'On the Nose': 'bg-gray-400',
+  'Optimistic': 'bg-amber-500',
+  'Overconfident': 'bg-orange-500',
+  'Delusional': 'bg-red-500',
+}
+
 export function formatDeviation(deviation: number): string {
   const sign = deviation >= 0 ? '+' : ''
   return `${sign}${deviation.toFixed(1)}%`

@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useMemo, useState, useEffect } from 'react'
 import {
   LineChart,
   Line,
@@ -29,6 +29,13 @@ const teamChartColors: Record<string, string> = {
 }
 
 export default function PaceChart({ standings }: PaceChartProps) {
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 640)
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth < 640)
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
+  }, [])
+
   // Determine max completed leg across all teams (only show actual data)
   const maxCompletedLeg = useMemo(() => {
     return Math.max(...standings.map(s => s.completedLegs), 0)
@@ -83,7 +90,7 @@ export default function PaceChart({ standings }: PaceChartProps) {
         <p className="text-sm text-muted-foreground">Actual vs projected pace per leg</p>
       </CardHeader>
       <CardContent>
-        <div className="h-56 sm:h-72 lg:h-80">
+        <div className="h-64 sm:h-72 lg:h-80">
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={chartData} margin={{ top: 5, right: 5, bottom: 20, left: 0 }}>
               {/* Zone bands */}
@@ -94,7 +101,7 @@ export default function PaceChart({ standings }: PaceChartProps) {
                   y2={band.max}
                   fill={band.fill}
                   fillOpacity={0.4}
-                  label={{
+                  label={isMobile ? undefined : {
                     value: band.zone,
                     position: 'insideRight',
                     fontSize: 9,
@@ -107,8 +114,11 @@ export default function PaceChart({ standings }: PaceChartProps) {
                 dataKey="leg"
                 type="number"
                 domain={[1, 36]}
-                ticks={Array.from({ length: 36 }, (_, i) => i + 1)}
-                tick={{ fontSize: 8 }}
+                ticks={isMobile
+                  ? [1, 6, 12, 18, 24, 30, 36]
+                  : Array.from({ length: 36 }, (_, i) => i + 1)
+                }
+                tick={{ fontSize: isMobile ? 9 : 8 }}
                 label={{ value: 'Leg', position: 'insideBottom', offset: -10 }}
               />
               <YAxis

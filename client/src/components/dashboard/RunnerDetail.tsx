@@ -37,6 +37,19 @@ function formatTime(seconds: number): string {
   return `${m}:${s.toString().padStart(2, '0')}`
 }
 
+function abbreviateZone(zone: string): string {
+  const abbrevs: Record<string, string> = {
+    'Sandbagged': 'SB',
+    'Humble': 'HUM',
+    'Dialed In': 'DI',
+    'On the Nose': 'OTN',
+    'Optimistic': 'OPT',
+    'Overconfident': 'OC',
+    'Delusional': 'DEL',
+  }
+  return abbrevs[zone] || zone
+}
+
 export default function RunnerDetail({ runnerId, onClose }: { runnerId: string; onClose?: () => void }) {
   const { data: runnerDetails, isLoading } = useQuery({
     queryKey: ['runner-details', runnerId],
@@ -106,16 +119,16 @@ export default function RunnerDetail({ runnerId, onClose }: { runnerId: string; 
       {/* Legs table */}
       <div className="space-y-2">
         <h4 className="text-sm font-medium">Assigned Legs</h4>
-        <div className="border rounded-md overflow-x-auto">
-          <table className="w-full text-sm min-w-[440px]">
+        <div className="border rounded-md">
+          <table className="w-full text-sm">
             <thead className="bg-muted">
               <tr>
-                <th className="px-2 sm:px-3 py-2 text-left font-medium">Leg</th>
-                <th className="px-2 sm:px-3 py-2 text-left font-medium">Dist</th>
-                <th className="px-2 sm:px-3 py-2 text-left font-medium">Time</th>
-                <th className="px-2 sm:px-3 py-2 text-left font-medium">Pace</th>
-                <th className="px-2 sm:px-3 py-2 text-left font-medium">Accuracy</th>
-                <th className="px-2 sm:px-3 py-2 text-center font-medium">Kills</th>
+                <th className="px-2 py-2 text-left font-medium">Leg</th>
+                <th className="px-2 py-2 text-left font-medium">Dist</th>
+                <th className="px-2 py-2 text-left font-medium">Time</th>
+                <th className="px-2 py-2 text-left font-medium hidden sm:table-cell">Pace</th>
+                <th className="px-2 py-2 text-left font-medium">Accuracy</th>
+                <th className="px-2 py-2 text-center font-medium">Kills</th>
               </tr>
             </thead>
             <tbody className="divide-y">
@@ -126,9 +139,9 @@ export default function RunnerDetail({ runnerId, onClose }: { runnerId: string; 
 
                 return (
                   <tr key={leg.legNumber} className={leg.clockTime ? 'bg-green-50 dark:bg-green-950/20' : ''}>
-                    <td className="px-2 sm:px-3 py-2 font-medium whitespace-nowrap">{leg.legNumber}</td>
-                    <td className="px-2 sm:px-3 py-2 whitespace-nowrap">{leg.distance.toFixed(2)}</td>
-                    <td className="px-2 sm:px-3 py-2 whitespace-nowrap">
+                    <td className="px-2 py-1.5 font-medium">{leg.legNumber}</td>
+                    <td className="px-2 py-1.5">{leg.distance.toFixed(1)}</td>
+                    <td className="px-2 py-1.5">
                       {leg.clockTime ? (
                         <span className="flex items-center gap-1">
                           <Clock className="h-3 w-3" />
@@ -138,19 +151,20 @@ export default function RunnerDetail({ runnerId, onClose }: { runnerId: string; 
                         <span className="text-muted-foreground">—</span>
                       )}
                     </td>
-                    <td className="px-2 sm:px-3 py-2 whitespace-nowrap">
+                    <td className="px-2 py-1.5 hidden sm:table-cell">
                       {leg.pace ? formatPace(leg.pace) : <span className="text-muted-foreground">—</span>}
                     </td>
-                    <td className="px-2 sm:px-3 py-2 whitespace-nowrap">
+                    <td className="px-2 py-1.5">
                       {zone ? (
                         <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium ${zone.bg} ${zone.color}`}>
-                          {zone.zone}
+                          <span className="hidden sm:inline">{zone.zone}</span>
+                          <span className="sm:hidden">{abbreviateZone(zone.zone)}</span>
                         </span>
                       ) : (
                         <span className="text-muted-foreground">—</span>
                       )}
                     </td>
-                    <td className="px-2 sm:px-3 py-2 text-center">
+                    <td className="px-2 py-1.5 text-center">
                       {leg.clockTime ? (
                         leg.kills > 0 ? (
                           <span className="flex items-center justify-center gap-1 text-amber-600">
