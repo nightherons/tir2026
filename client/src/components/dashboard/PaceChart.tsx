@@ -38,7 +38,7 @@ export default function PaceChart({ standings }: PaceChartProps) {
     if (maxCompletedLeg === 0) return []
 
     const data = []
-    for (let leg = 1; leg <= maxCompletedLeg; leg++) {
+    for (let leg = 1; leg <= 36; leg++) {
       const point: Record<string, unknown> = { leg }
       for (const standing of standings) {
         const actual = standing.legTimings?.[leg - 1]
@@ -74,7 +74,7 @@ export default function PaceChart({ standings }: PaceChartProps) {
   }
 
   // Van transitions happen at legs 6→7, 12→13, 18→19, 24→25, 30→31
-  const vanTransitions = [6.5, 12.5, 18.5, 24.5, 30.5].filter(v => v <= maxCompletedLeg)
+  const vanTransitions = [6.5, 12.5, 18.5, 24.5, 30.5]
 
   return (
     <Card>
@@ -105,7 +105,10 @@ export default function PaceChart({ standings }: PaceChartProps) {
               <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
               <XAxis
                 dataKey="leg"
-                tick={{ fontSize: 10 }}
+                type="number"
+                domain={[1, 36]}
+                ticks={Array.from({ length: 36 }, (_, i) => i + 1)}
+                tick={{ fontSize: 8 }}
                 label={{ value: 'Leg', position: 'insideBottom', offset: -10 }}
               />
               <YAxis
