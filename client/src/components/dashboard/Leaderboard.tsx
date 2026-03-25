@@ -217,7 +217,7 @@ export default function Leaderboard({ standings, totalMiles }: LeaderboardProps)
                   {/* Team badge */}
                   <div
                     className={cn(
-                      "w-10 h-10 sm:w-12 sm:h-12 rounded-lg flex items-center justify-center shadow-sm border flex-shrink-0 p-1",
+                      "w-10 h-10 sm:w-12 sm:h-12 rounded-lg flex items-center justify-center shadow-sm border flex-shrink-0 px-0.5 py-2",
                       colors.bg, colors.border
                     )}
                   >

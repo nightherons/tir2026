@@ -18,8 +18,8 @@ export default function MainLayout() {
         <div className="container flex h-16 items-center justify-between">
           {/* Logo */}
           <Link to="/dashboard" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-blue-600 to-blue-700 shadow-md p-1.5">
-              <NhrcBird className="w-full h-full text-white" />
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-blue-600 to-blue-700 shadow-md px-1 py-2.5">
+              <NhrcBird className="w-full text-white" />
             </div>
             <div className="hidden sm:block">
               <h1 className="font-semibold text-foreground leading-tight">
