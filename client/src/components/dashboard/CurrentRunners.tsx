@@ -42,11 +42,11 @@ function RunnerCard({ standing, onClick }: { standing: TeamStanding; onClick: ()
       }}
     >
       {/* Logo icon */}
-      <div className="relative flex-shrink-0">
+      <div className="relative flex-shrink-0 w-10 sm:w-14">
         <img
           src="/nhrc.png"
           alt="NHRC"
-          className="w-10 h-10 sm:w-14 sm:h-14 object-contain"
+          className="w-full object-contain"
           style={{ filter: isLight ? 'none' : 'brightness(0) invert(1)' }}
         />
       </div>
