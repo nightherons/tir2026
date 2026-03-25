@@ -140,4 +140,12 @@
   .team-text-white { @apply text-slate-600; }
   .team-text-red { @apply text-red-600; }
   .team-text-green { @apply text-green-600; }
+
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
 }

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef, useCallback } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { dashboardApi, api } from '../services/api'
 import { useSocketStore } from '../store/socketStore'
@@ -12,12 +12,25 @@ import CurrentRunners from '../components/dashboard/CurrentRunners'
 import RaceMap from '../components/dashboard/RaceMap'
 import RunnerSearch from '../components/dashboard/RunnerSearch'
 import LegWinners from '../components/dashboard/LegWinners'
+import { cn } from '@/lib/utils'
+
+const sections = [
+  { id: 'standings', label: 'Standings' },
+  { id: 'leg-winners', label: 'Legs' },
+  { id: 'on-course', label: 'On Course' },
+  { id: 'map', label: 'Map' },
+  { id: 'stats', label: 'Stats' },
+  { id: 'accuracy', label: 'Accuracy' },
+]
 
 export default function Dashboard() {
   const { onLeaderboardUpdate, onTimeEntered } = useSocketStore()
   const [standings, setStandings] = useState<TeamStanding[]>([])
   const [totalMiles, setTotalMiles] = useState<number>(0)
   const [raceStartTime, setRaceStartTime] = useState<string | undefined>()
+  const [activeSection, setActiveSection] = useState('standings')
+  const pillBarRef = useRef<HTMLDivElement>(null)
+  const isScrollingTo = useRef(false)
 
   const { data, isLoading, error } = useQuery({
     queryKey: ['dashboard'],
@@ -77,6 +90,52 @@ export default function Dashboard() {
     }
   }, [onLeaderboardUpdate, onTimeEntered])
 
+  // Track active section on scroll
+  useEffect(() => {
+    const handleScroll = () => {
+      if (isScrollingTo.current) return
+
+      const offset = 120 // header + pill bar height
+      for (let i = sections.length - 1; i >= 0; i--) {
+        const el = document.getElementById(sections[i].id)
+        if (el) {
+          const rect = el.getBoundingClientRect()
+          if (rect.top <= offset + 20) {
+            setActiveSection(sections[i].id)
+            break
+          }
+        }
+      }
+    }
+
+    window.addEventListener('scroll', handleScroll, { passive: true })
+    return () => window.removeEventListener('scroll', handleScroll)
+  }, [])
+
+  // Scroll active pill into view
+  useEffect(() => {
+    if (!pillBarRef.current) return
+    const activePill = pillBarRef.current.querySelector(`[data-section="${activeSection}"]`)
+    if (activePill) {
+      activePill.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' })
+    }
+  }, [activeSection])
+
+  const scrollToSection = useCallback((id: string) => {
+    const el = document.getElementById(id)
+    if (!el) return
+
+    isScrollingTo.current = true
+    setActiveSection(id)
+
+    const offset = 120
+    const top = el.getBoundingClientRect().top + window.scrollY - offset
+    window.scrollTo({ top, behavior: 'smooth' })
+
+    // Re-enable scroll tracking after animation
+    setTimeout(() => { isScrollingTo.current = false }, 800)
+  }, [])
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-[50vh]">
@@ -99,50 +158,88 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
-      {/* Header */}
-      <div className="text-center">
-        <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Live Race Dashboard</h2>
-      </div>
-
-      {/* Team Standings */}
-      <Leaderboard standings={standings} totalMiles={totalMiles} />
-
-      {/* Leg Winners */}
-      <LegWinners />
-
-      {/* Currently Running - horizontal banner */}
-      <CurrentRunners standings={standings} />
-
-      {/* Runner search - visible on mobile only, right after currently running */}
-      <div className="lg:hidden">
-        <RunnerSearch />
-      </div>
-
-      {/* Live Race Map */}
-      {legsData && legsData.length > 0 && (
-        <div>
-          <h3 className="text-lg font-semibold mb-3">Live Race Map</h3>
-          <RaceMap legs={legsData} standings={standings} raceStartTime={raceStartTime} routePaths={routePaths} />
+    <>
+      {/* Sticky section nav */}
+      <div className="sticky top-16 z-40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b">
+        <div
+          ref={pillBarRef}
+          className="max-w-7xl mx-auto flex gap-1.5 px-4 py-2 overflow-x-auto scrollbar-hide"
+        >
+          {sections.map(({ id, label }) => (
+            <button
+              key={id}
+              data-section={id}
+              onClick={() => scrollToSection(id)}
+              className={cn(
+                "px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap transition-colors shrink-0",
+                activeSection === id
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-muted text-muted-foreground hover:bg-muted/80"
+              )}
+            >
+              {label}
+            </button>
+          ))}
         </div>
-      )}
+      </div>
 
-      {/* Stats row */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Team progress */}
-        <TeamProgress standings={standings} />
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+        {/* Header */}
+        <div className="text-center">
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Live Race Dashboard</h2>
+        </div>
 
-        {/* Kills leaderboard */}
-        <KillsLeaderboard standings={standings} />
+        {/* Team Standings */}
+        <section id="standings">
+          <Leaderboard standings={standings} totalMiles={totalMiles} />
+        </section>
 
-        {/* Runner search - desktop only (mobile version is above) */}
-        <div className="hidden lg:block">
+        {/* Leg Winners */}
+        <section id="leg-winners">
+          <LegWinners />
+        </section>
+
+        {/* Currently Running - horizontal banner */}
+        <section id="on-course">
+          <CurrentRunners standings={standings} />
+        </section>
+
+        {/* Runner search - visible on mobile only, right after currently running */}
+        <div className="lg:hidden">
           <RunnerSearch />
         </div>
-      </div>
 
-      {/* Accuracy by leg chart */}
-      <PaceChart standings={standings} />
-    </div>
+        {/* Live Race Map */}
+        <section id="map">
+          {legsData && legsData.length > 0 && (
+            <div>
+              <h3 className="text-lg font-semibold mb-3">Live Race Map</h3>
+              <RaceMap legs={legsData} standings={standings} raceStartTime={raceStartTime} routePaths={routePaths} />
+            </div>
+          )}
+        </section>
+
+        {/* Stats row */}
+        <section id="stats">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Team progress */}
+            <TeamProgress standings={standings} />
+
+            {/* Kills leaderboard */}
+            <KillsLeaderboard standings={standings} />
+
+            {/* Runner search - desktop only (mobile version is above) */}
+            <div className="hidden lg:block">
+              <RunnerSearch />
+            </div>
+          </div>
+        </section>
+
+        {/* Accuracy by leg chart */}
+        <section id="accuracy">
+          <PaceChart standings={standings} />
+        </section>
+      </div>
+    </>
   )
 }
