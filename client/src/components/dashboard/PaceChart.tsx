@@ -30,13 +30,13 @@ const teamChartColors: Record<string, string> = {
 }
 
 const zoneGuide = [
-  { zone: 'Delusional', range: '> -10%', desc: 'Fantasy pace' },
-  { zone: 'Overconfident', range: '-5% to -10%', desc: 'Projected too aggressively' },
-  { zone: 'Optimistic', range: '-1% to -5%', desc: 'Slightly ambitious' },
-  { zone: 'On the Nose', range: '±1%', desc: 'Nailed the projection' },
-  { zone: 'Dialed In', range: '+1% to +5%', desc: 'Knew their ability, slightly exceeded' },
-  { zone: 'Humble', range: '+5% to +10%', desc: 'Undersold themselves' },
-  { zone: 'Sandbagged', range: '> +10%', desc: 'Clearly lowballed projection' },
+  { zone: 'Delusional', range: '> -10%', desc: 'Fantasy pace', short: 'Fantasy pace' },
+  { zone: 'Overconfident', range: '-5% to -10%', desc: 'Projected too aggressively', short: 'Too aggressive' },
+  { zone: 'Optimistic', range: '-1% to -5%', desc: 'Slightly ambitious', short: 'A bit ambitious' },
+  { zone: 'On the Nose', range: '±1%', desc: 'Nailed the projection', short: 'Nailed it' },
+  { zone: 'Dialed In', range: '+1% to +5%', desc: 'Knew their ability, slightly exceeded', short: 'Slightly exceeded' },
+  { zone: 'Humble', range: '+5% to +10%', desc: 'Undersold themselves', short: 'Undersold' },
+  { zone: 'Sandbagged', range: '> +10%', desc: 'Clearly lowballed projection', short: 'Lowballed' },
 ] as const
 
 export default function PaceChart({ standings }: PaceChartProps) {
@@ -184,7 +184,7 @@ export default function PaceChart({ standings }: PaceChartProps) {
           </button>
           {showGuide && (
             <div className="flex flex-col sm:flex-row gap-1.5 sm:gap-0 mt-2 text-xs">
-              {zoneGuide.map(({ zone, range, desc }, i) => {
+              {zoneGuide.map(({ zone, range, desc, short }, i) => {
                 const style = zoneStyles[zone]
                 return (
                   <div
@@ -197,6 +197,7 @@ export default function PaceChart({ standings }: PaceChartProps) {
                       {zone}
                     </span>
                     <span className="text-muted-foreground font-mono">{range}</span>
+                    <span className="text-muted-foreground sm:hidden">— {short}</span>
                     <span className="text-muted-foreground hidden sm:block">{desc}</span>
                   </div>
                 )
