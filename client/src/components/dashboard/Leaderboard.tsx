@@ -197,7 +197,7 @@ export default function Leaderboard({ standings, totalMiles }: LeaderboardProps)
                 className={cn(
                   "p-3 sm:p-4 rounded-xl transition-all duration-300 cursor-pointer",
                   isExpanded
-                    ? "bg-accent border border-border shadow-sm"
+                    ? "bg-blue-50 dark:bg-blue-950/30 ring-2 ring-inset ring-blue-300 dark:ring-blue-700"
                     : "bg-muted/50 hover:bg-muted"
                 )}
               >
