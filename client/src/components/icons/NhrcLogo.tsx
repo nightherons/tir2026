@@ -1,7 +1,7 @@
 /** Full NHRC logo — text + bird. Uses currentColor so parent can set color via className or style. */
 export function NhrcLogo({ className }: { className?: string }) {
   return (
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 584 480" fill="currentColor" className={className}>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="75 52 410 348" fill="currentColor" className={className}>
       {/* NIGHT HERON text */}
       <path d="M120,139.7l-17.28-20-5.77-6.8L108.51,144l-7.39,2.74L82.05,95.42l7.24-2.69L106,113.24l5.57,7L99.92,88.78l7.31-2.72,19.07,51.29Z"/>
       <path d="M142.13,132.53,127.06,79.92l8.38-2.4,15.07,52.61Z"/>
