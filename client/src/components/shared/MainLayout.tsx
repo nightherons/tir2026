@@ -1,5 +1,6 @@
 import { Outlet, Link } from 'react-router-dom'
 import { Timer, Radio, LogOut, Settings, ClipboardList } from 'lucide-react'
+import { NhrcBird } from '../icons/NhrcLogo'
 import { useSocketStore } from '../../store/socketStore'
 import { useAuthStore } from '../../store/authStore'
 import { Button } from '../ui/button'
@@ -17,8 +18,8 @@ export default function MainLayout() {
         <div className="container flex h-16 items-center justify-between">
           {/* Logo */}
           <Link to="/dashboard" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-blue-600 to-blue-700 shadow-md">
-              <span className="text-lg font-bold text-white">TIR</span>
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-blue-600 to-blue-700 shadow-md p-1.5">
+              <NhrcBird className="w-full h-full text-white" />
             </div>
             <div className="hidden sm:block">
               <h1 className="font-semibold text-foreground leading-tight">
