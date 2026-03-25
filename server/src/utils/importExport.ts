@@ -39,8 +39,21 @@ interface ExportData {
     time: string
     timeSeconds: number
     pace: string
+    projectedPace: string
+    deviation: string
+    zone: string
     kills: number
   }[]
+}
+
+function getZoneName(deviation: number): string {
+  if (deviation > 10) return 'Sandbagged'
+  if (deviation > 5) return 'Humble'
+  if (deviation > 1) return 'Dialed In'
+  if (deviation >= -1) return 'On the Nose'
+  if (deviation >= -5) return 'Optimistic'
+  if (deviation >= -10) return 'Overconfident'
+  return 'Delusional'
 }
 
 function formatPace(seconds: number): string {
@@ -103,6 +116,10 @@ export async function getExportData(): Promise<ExportData> {
     })),
     results: results.map((r) => {
       const pacePerMile = r.clockTime / r.leg.distance
+      const projectedTime = r.runner.projectedPace * r.leg.distance
+      const deviation = projectedTime > 0
+        ? ((projectedTime - r.clockTime) / projectedTime) * 100
+        : 0
       return {
         team: r.runner.team.name,
         runner: r.runner.name,
@@ -113,6 +130,9 @@ export async function getExportData(): Promise<ExportData> {
         time: formatTime(r.clockTime),
         timeSeconds: r.clockTime,
         pace: formatPace(Math.round(pacePerMile)),
+        projectedPace: formatPace(r.runner.projectedPace),
+        deviation: `${deviation >= 0 ? '+' : ''}${deviation.toFixed(1)}%`,
+        zone: getZoneName(deviation),
         kills: r.kills,
       }
     }),
@@ -149,9 +169,9 @@ export async function exportToCSV(): Promise<string> {
 
   // Results sheet
   csv += '=== RESULTS ===\n'
-  csv += 'Team,Runner,Van,Order,Leg,Distance,Time,Pace,Kills\n'
+  csv += 'Team,Runner,Van,Order,Leg,Distance,Time,Pace,Projected Pace,Deviation,Zone,Kills\n'
   for (const result of data.results) {
-    csv += `${result.team},${result.runner},${result.van},${result.order},${result.leg},${result.distance},${result.time},${result.pace},${result.kills}\n`
+    csv += `${result.team},${result.runner},${result.van},${result.order},${result.leg},${result.distance},${result.time},${result.pace},${result.projectedPace},${result.deviation},${result.zone},${result.kills}\n`
   }
 
   return csv
@@ -201,6 +221,9 @@ export async function exportToExcel(): Promise<Buffer> {
     'Distance': r.distance,
     'Time': r.time,
     'Pace': r.pace,
+    'Projected Pace': r.projectedPace,
+    'Deviation': r.deviation,
+    'Zone': r.zone,
     'Kills': r.kills,
   })))
   XLSX.utils.book_append_sheet(workbook, resultsWs, 'Results')
