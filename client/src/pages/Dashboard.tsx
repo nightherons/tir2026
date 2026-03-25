@@ -210,7 +210,7 @@ export default function Dashboard() {
         </div>
 
         {/* Live Race Map */}
-        <section id="map">
+        <section id="map" className="relative z-0">
           {legsData && legsData.length > 0 && (
             <div>
               <h3 className="text-lg font-semibold mb-3">Live Race Map</h3>
