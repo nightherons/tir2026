@@ -216,14 +216,15 @@ export default function Leaderboard({ standings, totalMiles }: LeaderboardProps)
                   {/* Team badge */}
                   <div
                     className={cn(
-                      "w-10 h-10 sm:w-12 sm:h-12 rounded-lg flex items-center justify-center shadow-sm border-2 flex-shrink-0 p-1 bg-white dark:bg-gray-100",
-                      colors.border
+                      "w-10 h-10 sm:w-12 sm:h-12 rounded-lg flex items-center justify-center shadow-sm border flex-shrink-0 p-1",
+                      colors.bg, colors.border
                     )}
                   >
                     <img
                       src="/nhrc.png"
                       alt={standing.team.name}
                       className="w-full h-full object-contain"
+                      style={{ filter: standing.team.name === 'WHITE' ? 'none' : 'brightness(0) invert(1)' }}
                     />
                   </div>
 
