@@ -30,13 +30,13 @@ const teamChartColors: Record<string, string> = {
 }
 
 const zoneGuide = [
-  { zone: 'Sandbagged', range: '> +10%', desc: 'Clearly lowballed projection' },
-  { zone: 'Humble', range: '+5% to +10%', desc: 'Undersold themselves' },
-  { zone: 'Dialed In', range: '+1% to +5%', desc: 'Knew their ability, slightly exceeded' },
-  { zone: 'On the Nose', range: '±1%', desc: 'Nailed the projection' },
-  { zone: 'Optimistic', range: '-1% to -5%', desc: 'Slightly ambitious' },
-  { zone: 'Overconfident', range: '-5% to -10%', desc: 'Projected too aggressively' },
   { zone: 'Delusional', range: '> -10%', desc: 'Fantasy pace' },
+  { zone: 'Overconfident', range: '-5% to -10%', desc: 'Projected too aggressively' },
+  { zone: 'Optimistic', range: '-1% to -5%', desc: 'Slightly ambitious' },
+  { zone: 'On the Nose', range: '±1%', desc: 'Nailed the projection' },
+  { zone: 'Dialed In', range: '+1% to +5%', desc: 'Knew their ability, slightly exceeded' },
+  { zone: 'Humble', range: '+5% to +10%', desc: 'Undersold themselves' },
+  { zone: 'Sandbagged', range: '> +10%', desc: 'Clearly lowballed projection' },
 ] as const
 
 export default function PaceChart({ standings }: PaceChartProps) {
