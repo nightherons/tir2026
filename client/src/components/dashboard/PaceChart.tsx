@@ -183,16 +183,15 @@ export default function PaceChart({ standings }: PaceChartProps) {
             Zone Guide
           </button>
           {showGuide && (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1 mt-2 text-xs">
+            <div className="flex flex-col sm:flex-row sm:flex-wrap gap-1.5 sm:gap-2 mt-2 text-xs">
               {zoneGuide.map(({ zone, range, desc }) => {
                 const style = zoneStyles[zone]
                 return (
-                  <div key={zone} className="flex items-center gap-2 py-0.5">
-                    <span className={`inline-block px-1.5 py-0.5 rounded font-medium ${style.bg} ${style.color}`}>
+                  <div key={zone} className="flex items-center gap-1.5" title={desc}>
+                    <span className={`inline-block px-1.5 py-0.5 rounded font-medium shrink-0 ${style.bg} ${style.color}`}>
                       {zone}
                     </span>
                     <span className="text-muted-foreground font-mono">{range}</span>
-                    <span className="text-muted-foreground hidden sm:inline">— {desc}</span>
                   </div>
                 )
               })}
