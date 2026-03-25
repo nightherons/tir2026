@@ -163,7 +163,7 @@ export default function Dashboard() {
       <div className="sticky top-16 z-40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b">
         <div
           ref={pillBarRef}
-          className="max-w-7xl mx-auto flex gap-1.5 px-4 py-2 overflow-x-auto scrollbar-hide"
+          className="max-w-7xl mx-auto flex gap-1.5 px-4 sm:px-6 lg:px-8 py-2 overflow-x-auto scrollbar-hide"
         >
           {sections.map(({ id, label }) => (
             <button
