@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Activity } from 'lucide-react'
 import type { TeamStanding } from '../../types'
 import RunnerDetail from './RunnerDetail'
+import { NhrcBird } from '../icons/NhrcLogo'
 
 interface CurrentRunnersProps {
   standings: TeamStanding[]
@@ -17,7 +18,6 @@ function isLightColor(hexColor: string): boolean {
   return luminance > 0.5
 }
 
-// Helper to darken a hex color for borders
 function darkenColor(hexColor: string, amount: number = 0.2): string {
   const hex = hexColor.replace('#', '')
   const r = Math.max(0, Math.floor(parseInt(hex.substring(0, 2), 16) * (1 - amount)))
@@ -43,12 +43,7 @@ function RunnerCard({ standing, onClick }: { standing: TeamStanding; onClick: ()
     >
       {/* Logo icon */}
       <div className="relative flex-shrink-0 w-10 sm:w-14">
-        <img
-          src="/nhrc.png"
-          alt="NHRC"
-          className="w-full object-contain"
-          style={{ filter: isLight ? 'none' : 'brightness(0) invert(1)' }}
-        />
+        <NhrcBird className={`w-full ${isLight ? 'text-gray-900' : 'text-white'}`} />
       </div>
 
       {/* Runner info */}

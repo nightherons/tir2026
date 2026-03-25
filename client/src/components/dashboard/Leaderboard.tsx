@@ -10,6 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '../ui/card'
 import { Badge } from '../ui/badge'
 import { cn } from '@/lib/utils'
 import RunnerDetail from './RunnerDetail'
+import { NhrcLogo } from '../icons/NhrcLogo'
 
 interface LeaderboardProps {
   standings: TeamStanding[]
@@ -220,12 +221,7 @@ export default function Leaderboard({ standings, totalMiles }: LeaderboardProps)
                       colors.bg, colors.border
                     )}
                   >
-                    <img
-                      src="/nhrc.png"
-                      alt={standing.team.name}
-                      className="w-full h-full object-contain"
-                      style={{ filter: standing.team.name === 'WHITE' ? 'none' : 'brightness(0) invert(1)' }}
-                    />
+                    <NhrcLogo className={cn("w-full h-full", standing.team.name === 'WHITE' ? 'text-gray-900' : 'text-white')} />
                   </div>
 
                   {/* Team info */}
