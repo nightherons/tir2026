@@ -14,10 +14,10 @@ import RunnerSearch from '../components/dashboard/RunnerSearch'
 import LegWinners from '../components/dashboard/LegWinners'
 import { cn } from '@/lib/utils'
 
-const sections = [
+const allSections = [
   { id: 'standings', label: 'Standings' },
   { id: 'leg-winners', label: 'Legs' },
-  { id: 'on-course', label: 'On Course' },
+  { id: 'on-course', label: 'On Course', hideWhenFinished: true },
   { id: 'map', label: 'Map' },
   { id: 'stats', label: 'Stats' },
   { id: 'accuracy', label: 'Accuracy' },
@@ -28,6 +28,7 @@ export default function Dashboard() {
   const [standings, setStandings] = useState<TeamStanding[]>([])
   const [totalMiles, setTotalMiles] = useState<number>(0)
   const [raceStartTime, setRaceStartTime] = useState<string | undefined>()
+  const [raceStatus, setRaceStatus] = useState<string>('pre-race')
   const [activeSection, setActiveSection] = useState('standings')
   const pillBarRef = useRef<HTMLDivElement>(null)
   const isScrollingTo = useRef(false)
@@ -69,6 +70,9 @@ export default function Dashboard() {
     if (data?.data?.data?.raceStartTime) {
       setRaceStartTime(data.data.data.raceStartTime)
     }
+    if (data?.data?.data?.raceStatus) {
+      setRaceStatus(data.data.data.raceStatus)
+    }
   }, [data])
 
   // Listen for real-time updates
@@ -90,6 +94,9 @@ export default function Dashboard() {
     }
   }, [onLeaderboardUpdate, onTimeEntered])
 
+  const isFinished = raceStatus === 'finished'
+  const sections = allSections.filter(s => !s.hideWhenFinished || !isFinished)
+
   // Track active section on scroll
   useEffect(() => {
     const handleScroll = () => {
@@ -110,7 +117,7 @@ export default function Dashboard() {
 
     window.addEventListener('scroll', handleScroll, { passive: true })
     return () => window.removeEventListener('scroll', handleScroll)
-  }, [])
+  }, [sections])
 
   // Scroll active pill into view
   useEffect(() => {
@@ -186,12 +193,14 @@ export default function Dashboard() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
         {/* Header */}
         <div className="text-center">
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Live Race Dashboard</h2>
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+            {isFinished ? 'Final Results' : 'Live Race Dashboard'}
+          </h2>
         </div>
 
         {/* Team Standings */}
         <section id="standings">
-          <Leaderboard standings={standings} totalMiles={totalMiles} />
+          <Leaderboard standings={standings} totalMiles={totalMiles} raceStatus={raceStatus} />
         </section>
 
         {/* Leg Winners */}
@@ -199,10 +208,12 @@ export default function Dashboard() {
           <LegWinners />
         </section>
 
-        {/* Currently Running - horizontal banner */}
-        <section id="on-course">
-          <CurrentRunners standings={standings} />
-        </section>
+        {/* Currently Running - horizontal banner (hidden when race is finished) */}
+        {!isFinished && (
+          <section id="on-course">
+            <CurrentRunners standings={standings} />
+          </section>
+        )}
 
         {/* Runner search - visible on mobile only, right after currently running */}
         <div className="lg:hidden">

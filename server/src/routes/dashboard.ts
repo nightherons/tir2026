@@ -8,13 +8,15 @@ const prisma = new PrismaClient()
 // Get all dashboard data
 router.get('/', async (req, res) => {
   try {
-    // Fetch all 36 legs (for distances) and raceDate config once
-    const [allLegs, raceConfig] = await Promise.all([
+    // Fetch all 36 legs (for distances) and race config once
+    const [allLegs, raceConfig, raceStatusConfig] = await Promise.all([
       prisma.leg.findMany({ orderBy: { legNumber: 'asc' } }),
       prisma.raceConfig.findUnique({ where: { key: 'raceDate' } }),
+      prisma.raceConfig.findUnique({ where: { key: 'raceStatus' } }),
     ])
 
     const raceStartTime = raceConfig?.value || null
+    const raceStatus = raceStatusConfig?.value || 'pre-race' // pre-race | active | finished
 
     // Build a map of leg number -> leg for quick lookups
     const legsByNumber = new Map(allLegs.map(l => [l.legNumber, l]))
@@ -205,8 +207,17 @@ router.get('/', async (req, res) => {
       }
     })
 
-    // Sort by race position (further ahead = better rank)
-    standings.sort((a, b) => b.racePosition - a.racePosition)
+    // Sort standings: when race is finished, rank by actual total time;
+    // otherwise rank by race position (further ahead = better), with total time as tiebreaker
+    if (raceStatus === 'finished') {
+      standings.sort((a, b) => a.totalTime - b.totalTime)
+    } else {
+      standings.sort((a, b) => {
+        const posDiff = b.racePosition - a.racePosition
+        if (Math.abs(posDiff) < 0.001) return a.totalTime - b.totalTime
+        return posDiff
+      })
+    }
 
     standings.forEach((s, index) => {
       s.rank = index + 1
@@ -221,6 +232,7 @@ router.get('/', async (req, res) => {
         standings,
         totalMiles: Math.round(totalMiles * 10) / 10,
         raceStartTime,
+        raceStatus,
         lastUpdate: new Date().toISOString(),
       },
     })

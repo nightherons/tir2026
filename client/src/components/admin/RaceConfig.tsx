@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Settings, CheckCircle2, Info } from 'lucide-react'
+import { Settings, CheckCircle2, Info, Flag, AlertTriangle } from 'lucide-react'
 import { adminApi } from '../../services/api'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../ui/card'
 import { Button } from '../ui/button'
@@ -23,6 +23,92 @@ const configFields: Omit<ConfigItem, 'value'>[] = [
   { key: 'runnersPerVan', label: 'Runners Per Van', type: 'number' },
   { key: 'pinLength', label: 'Runner PIN Length (4-8 digits)', type: 'number' },
 ]
+
+function RaceStatusCard({ config }: { config: Record<string, string> }) {
+  const queryClient = useQueryClient()
+  const [confirming, setConfirming] = useState(false)
+  const raceStatus = config.raceStatus || 'pre-race'
+
+  const finalizeMutation = useMutation({
+    mutationFn: (status: string) => adminApi.updateConfig({ raceStatus: status }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-config'] })
+      queryClient.invalidateQueries({ queryKey: ['dashboard'] })
+      setConfirming(false)
+    },
+  })
+
+  const isFinished = raceStatus === 'finished'
+
+  return (
+    <Card className={isFinished ? 'border-green-300 dark:border-green-800' : 'border-amber-300 dark:border-amber-800'}>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Flag className="h-5 w-5" />
+          Race Status
+        </CardTitle>
+        <CardDescription>
+          {isFinished
+            ? 'The race has been finalized. Dashboard shows final results ranked by actual finish time.'
+            : 'Finalize the race when all teams have finished to lock in final standings.'}
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="flex items-center gap-3">
+          <span className="text-sm font-medium">Current status:</span>
+          <Badge variant={isFinished ? 'default' : 'secondary'}>
+            {raceStatus === 'finished' ? 'Finished' : raceStatus === 'active' ? 'Active' : 'Pre-Race'}
+          </Badge>
+        </div>
+
+        {!isFinished && !confirming && (
+          <Button
+            variant="default"
+            onClick={() => setConfirming(true)}
+            className="bg-amber-600 hover:bg-amber-700"
+          >
+            <Flag className="h-4 w-4 mr-2" />
+            Finalize Race
+          </Button>
+        )}
+
+        {!isFinished && confirming && (
+          <div className="p-4 rounded-lg bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 space-y-3">
+            <div className="flex items-start gap-2">
+              <AlertTriangle className="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5" />
+              <p className="text-sm text-amber-800 dark:text-amber-200">
+                This will switch the dashboard to show final results ranked by actual finish time.
+                Are you sure all teams have finished?
+              </p>
+            </div>
+            <div className="flex gap-2">
+              <Button
+                variant="destructive"
+                onClick={() => finalizeMutation.mutate('finished')}
+                disabled={finalizeMutation.isPending}
+              >
+                {finalizeMutation.isPending ? 'Finalizing...' : 'Yes, Finalize'}
+              </Button>
+              <Button variant="outline" onClick={() => setConfirming(false)}>
+                Cancel
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {isFinished && (
+          <Button
+            variant="outline"
+            onClick={() => finalizeMutation.mutate('active')}
+            disabled={finalizeMutation.isPending}
+          >
+            {finalizeMutation.isPending ? 'Reverting...' : 'Revert to Active'}
+          </Button>
+        )}
+      </CardContent>
+    </Card>
+  )
+}
 
 export default function RaceConfig() {
   const queryClient = useQueryClient()
@@ -229,6 +315,9 @@ export default function RaceConfig() {
           {updateMutation.isPending ? 'Saving...' : 'Save Settings'}
         </Button>
       </form>
+
+      {/* Finalize Race */}
+      <RaceStatusCard config={config} />
     </div>
   )
 }

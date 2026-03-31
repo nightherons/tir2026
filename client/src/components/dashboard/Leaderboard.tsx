@@ -15,6 +15,7 @@ import { NhrcBird } from '../icons/NhrcLogo'
 interface LeaderboardProps {
   standings: TeamStanding[]
   totalMiles: number
+  raceStatus?: string
 }
 
 interface LegResultData {
@@ -157,7 +158,8 @@ function TeamDetail({ teamId }: { teamId: string }) {
   )
 }
 
-export default function Leaderboard({ standings, totalMiles }: LeaderboardProps) {
+export default function Leaderboard({ standings, totalMiles, raceStatus }: LeaderboardProps) {
+  const isFinished = raceStatus === 'finished'
   const sortedStandings = [...standings].sort((a, b) => a.rank - b.rank)
   const [expandedTeam, setExpandedTeam] = useState<string | null>(null)
   const [directRunnerId, setDirectRunnerId] = useState<string | null>(null)
@@ -171,8 +173,8 @@ export default function Leaderboard({ standings, totalMiles }: LeaderboardProps)
             Team Standings
           </CardTitle>
           {sortedStandings.length > 0 && (
-            <Badge variant="secondary" className="font-mono">
-              Leg {sortedStandings[0].currentLeg}/36
+            <Badge variant={isFinished ? 'default' : 'secondary'} className="font-mono">
+              {isFinished ? 'Final' : `Leg ${sortedStandings[0].currentLeg}/36`}
             </Badge>
           )}
         </div>
@@ -235,46 +237,73 @@ export default function Leaderboard({ standings, totalMiles }: LeaderboardProps)
                       </Badge>
                     </div>
                     <div className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm text-muted-foreground">
-                      <span>Leg {standing.completedLegs + 1}/36</span>
-                      <span className="sm:hidden text-muted-foreground/50">•</span>
-                      <span className="sm:hidden font-mono">{standing.milesCompleted?.toFixed(1) || '0.0'}/{totalMiles.toFixed(0)} mi</span>
-                      {standing.currentRunner && (
+                      {isFinished ? (
                         <>
-                          <span className="text-muted-foreground/50 hidden sm:inline">•</span>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              const runnerId = standing.currentRunner?.id
-                              if (runnerId) {
-                                if (expandedTeam === standing.team.id && directRunnerId === runnerId) {
-                                  setExpandedTeam(null)
-                                  setDirectRunnerId(null)
-                                } else {
-                                  setExpandedTeam(standing.team.id)
-                                  setDirectRunnerId(runnerId)
-                                }
-                              }
-                            }}
-                            className="hidden sm:flex items-center gap-1 text-primary hover:underline"
-                          >
-                            <Users className="h-3 w-3" />
-                            <span className="truncate max-w-[120px]">{standing.currentRunner.name}</span>
-                          </button>
+                          <span className="font-mono">{formatTime(standing.totalTime)}</span>
+                          {index > 0 && (
+                            <>
+                              <span className="text-muted-foreground/50">•</span>
+                              <span className="font-mono text-red-500">+{formatTime(standing.totalTime - sortedStandings[0].totalTime)}</span>
+                            </>
+                          )}
+                        </>
+                      ) : (
+                        <>
+                          <span>Leg {standing.completedLegs + 1}/36</span>
+                          <span className="sm:hidden text-muted-foreground/50">•</span>
+                          <span className="sm:hidden font-mono">{standing.milesCompleted?.toFixed(1) || '0.0'}/{totalMiles.toFixed(0)} mi</span>
+                          {standing.currentRunner && (
+                            <>
+                              <span className="text-muted-foreground/50 hidden sm:inline">•</span>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  const runnerId = standing.currentRunner?.id
+                                  if (runnerId) {
+                                    if (expandedTeam === standing.team.id && directRunnerId === runnerId) {
+                                      setExpandedTeam(null)
+                                      setDirectRunnerId(null)
+                                    } else {
+                                      setExpandedTeam(standing.team.id)
+                                      setDirectRunnerId(runnerId)
+                                    }
+                                  }
+                                }}
+                                className="hidden sm:flex items-center gap-1 text-primary hover:underline"
+                              >
+                                <Users className="h-3 w-3" />
+                                <span className="truncate max-w-[120px]">{standing.currentRunner.name}</span>
+                              </button>
+                            </>
+                          )}
                         </>
                       )}
                     </div>
                   </div>
 
-                  {/* Desktop: Miles and projected finish inline */}
+                  {/* Desktop: Miles/finish time and pace info */}
                   <div className="text-right flex-shrink-0 hidden sm:block">
-                    <div className="font-mono font-semibold text-foreground text-sm">
-                      {standing.milesCompleted?.toFixed(1) || '0.0'}/{totalMiles.toFixed(1)} mi
-                    </div>
-                    {standing.projectedFinishTime ? (
-                      <div className="text-sm text-muted-foreground">
-                        Projected Finish: {new Date(standing.projectedFinishTime).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}
-                      </div>
-                    ) : null}
+                    {isFinished ? (
+                      <>
+                        <div className="font-mono font-semibold text-foreground text-sm">
+                          {totalMiles.toFixed(1)} mi
+                        </div>
+                        <div className="text-sm text-muted-foreground">
+                          Kills: {standing.totalKills}
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <div className="font-mono font-semibold text-foreground text-sm">
+                          {standing.milesCompleted?.toFixed(1) || '0.0'}/{totalMiles.toFixed(1)} mi
+                        </div>
+                        {standing.projectedFinishTime ? (
+                          <div className="text-sm text-muted-foreground">
+                            Projected Finish: {new Date(standing.projectedFinishTime).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}
+                          </div>
+                        ) : null}
+                      </>
+                    )}
                     <div className={cn(
                       "flex items-center justify-end gap-1 text-sm font-medium",
                       standing.paceVsProjected < 0 ? "text-green-600 dark:text-green-400" :
@@ -299,7 +328,7 @@ export default function Leaderboard({ standings, totalMiles }: LeaderboardProps)
                   )} />
                 </div>
 
-                {/* Mobile: row 2 - pace badge + ETA */}
+                {/* Mobile: row 2 - pace badge + ETA/kills */}
                 <div className="flex items-center gap-2 pl-10 mt-1 sm:hidden">
                   <span className={cn(
                     "inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full",
@@ -318,13 +347,22 @@ export default function Leaderboard({ standings, totalMiles }: LeaderboardProps)
                     )}
                     {formatPaceDiffShort(standing.paceVsProjected)}
                   </span>
-                  {standing.projectedFinishTime && (
+                  {isFinished ? (
                     <>
                       <span className="text-muted-foreground/50">•</span>
                       <span className="text-xs text-muted-foreground">
-                        ETA {new Date(standing.projectedFinishTime).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}
+                        {standing.totalKills} kills
                       </span>
                     </>
+                  ) : (
+                    standing.projectedFinishTime && (
+                      <>
+                        <span className="text-muted-foreground/50">•</span>
+                        <span className="text-xs text-muted-foreground">
+                          ETA {new Date(standing.projectedFinishTime).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}
+                        </span>
+                      </>
+                    )
                   )}
                 </div>
               </div>
