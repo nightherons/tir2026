@@ -9,6 +9,7 @@ import Dashboard from './pages/Dashboard'
 import RunnerEntry from './pages/RunnerEntry'
 import CaptainEntry from './pages/CaptainEntry'
 import AdminPanel from './pages/AdminPanel'
+import Wrapup from './pages/Wrapup'
 
 // Layouts
 import MainLayout from './components/shared/MainLayout'
@@ -32,6 +33,11 @@ function App() {
       {/* Dashboard - public */}
       <Route path="/dashboard" element={<MainLayout />}>
         <Route index element={<Dashboard />} />
+      </Route>
+
+      {/* Wrap-up dashboard - public */}
+      <Route path="/wrapup" element={<MainLayout />}>
+        <Route index element={<Wrapup />} />
       </Route>
 
       {/* Runner time entry - PIN protected in component */}

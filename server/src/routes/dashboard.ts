@@ -570,6 +570,192 @@ router.get('/debug', async (req, res) => {
   }
 })
 
+// Race wrap-up data for post-race analysis dashboard
+router.get('/wrapup', async (req, res) => {
+  try {
+    const [allLegs, teams, raceConfig] = await Promise.all([
+      prisma.leg.findMany({ orderBy: { legNumber: 'asc' } }),
+      prisma.team.findMany({
+        include: {
+          runners: {
+            orderBy: [{ vanNumber: 'asc' }, { runOrder: 'asc' }],
+            include: {
+              legResults: { include: { leg: true } },
+            },
+          },
+        },
+      }),
+      prisma.raceConfig.findUnique({ where: { key: 'raceDate' } }),
+    ])
+
+    const legsByNumber = new Map(allLegs.map(l => [l.legNumber, l]))
+    const raceStartTime = raceConfig?.value || null
+
+    // Build per-team data
+    const teamResults = teams.map(team => {
+      const allResults = team.runners.flatMap(r => r.legResults)
+      const totalTime = allResults.reduce((sum, r) => sum + (r.clockTime || 0), 0)
+      const totalKills = allResults.reduce((sum, r) => sum + r.kills, 0)
+
+      // Build runner-to-leg mapping
+      const runnerByLeg = new Map<number, typeof team.runners[0]>()
+      for (const runner of team.runners) {
+        for (const legNum of getRunnerLegNumbers(runner)) {
+          runnerByLeg.set(legNum, runner)
+        }
+      }
+
+      // Results indexed by leg
+      const resultsByLeg = new Map<number, typeof allResults[0]>()
+      for (const result of allResults) {
+        if (result.leg) resultsByLeg.set(result.leg.legNumber, result)
+      }
+
+      // Adjusted distances
+      const adjustedDistByLeg = new Map<number, number>()
+      for (const result of allResults) {
+        if (result.leg && result.adjustedDistance != null) {
+          adjustedDistByLeg.set(result.leg.legNumber, result.adjustedDistance)
+        }
+      }
+
+      const getDistance = (legNum: number) =>
+        adjustedDistByLeg.get(legNum) ?? legsByNumber.get(legNum)?.distance ?? 5
+
+      // Projected time
+      const projectedTime = team.runners.reduce((sum, runner) => {
+        return sum + getRunnerLegNumbers(runner).reduce((ls, legNum) => {
+          return ls + runner.projectedPace * getDistance(legNum)
+        }, 0)
+      }, 0)
+
+      // Per-leg data for this team
+      const legs = Array.from({ length: 36 }, (_, i) => {
+        const legNum = i + 1
+        const result = resultsByLeg.get(legNum)
+        const runner = runnerByLeg.get(legNum)
+        const distance = getDistance(legNum)
+        const projectedPace = runner?.projectedPace || 600
+        const actualPace = result?.clockTime ? result.clockTime / distance : null
+        return {
+          legNumber: legNum,
+          distance,
+          runnerName: runner?.name || 'Unknown',
+          projectedPace,
+          actualPace,
+          clockTime: result?.clockTime || null,
+          kills: result?.kills || 0,
+        }
+      })
+
+      // Per-runner summary
+      const runners = team.runners.map(runner => {
+        const legNums = getRunnerLegNumbers(runner)
+        const runnerLegs = legNums.map(legNum => {
+          const result = resultsByLeg.get(legNum)
+          const distance = getDistance(legNum)
+          return {
+            legNumber: legNum,
+            distance,
+            projectedPace: runner.projectedPace,
+            actualPace: result?.clockTime ? result.clockTime / distance : null,
+            clockTime: result?.clockTime || null,
+            kills: result?.kills || 0,
+          }
+        })
+
+        const completedLegs = runnerLegs.filter(l => l.actualPace !== null)
+        const totalMiles = runnerLegs.reduce((s, l) => s + l.distance, 0)
+        const avgActualPace = completedLegs.length > 0
+          ? completedLegs.reduce((s, l) => s + l.clockTime!, 0) /
+            completedLegs.reduce((s, l) => s + l.distance, 0)
+          : null
+        const totalKills = runnerLegs.reduce((s, l) => s + l.kills, 0)
+
+        return {
+          name: runner.name,
+          vanNumber: runner.vanNumber,
+          runOrder: runner.runOrder,
+          projectedPace: runner.projectedPace,
+          avgActualPace,
+          totalMiles,
+          totalKills,
+          legs: runnerLegs,
+        }
+      })
+
+      return {
+        team: { id: team.id, name: team.name, city: team.city, color: team.color },
+        totalTime,
+        projectedTime,
+        paceAheadBehind: totalTime - projectedTime,
+        totalKills,
+        completedLegs: allResults.length,
+        legs,
+        runners,
+      }
+    })
+
+    // Sort teams by total time (fastest first)
+    teamResults.sort((a, b) => a.totalTime - b.totalTime)
+    const leaderTime = teamResults[0]?.totalTime || 0
+
+    const teamStandings = teamResults.map((t, i) => ({
+      ...t,
+      place: i + 1,
+      timeBehindLeader: t.totalTime - leaderTime,
+    }))
+
+    // All runners across all teams for cross-team rankings
+    const allRunners = teamResults.flatMap(t =>
+      t.runners.map(r => ({
+        ...r,
+        teamName: t.team.name,
+        teamColor: t.team.color,
+      }))
+    )
+
+    // Per-leg winners (fastest pace across all teams)
+    const legWinners = Array.from({ length: 36 }, (_, i) => {
+      const legNum = i + 1
+      const leg = legsByNumber.get(legNum)
+      const entries = teamResults.flatMap(t => {
+        const legData = t.legs[i]
+        if (!legData.actualPace) return []
+        return [{
+          runnerName: legData.runnerName,
+          teamName: t.team.name,
+          teamColor: t.team.color,
+          pace: legData.actualPace,
+          clockTime: legData.clockTime!,
+          kills: legData.kills,
+          distance: legData.distance,
+        }]
+      }).sort((a, b) => a.pace - b.pace)
+
+      return {
+        legNumber: legNum,
+        distance: leg?.distance || 5,
+        results: entries,
+      }
+    })
+
+    res.json({
+      success: true,
+      data: {
+        teamStandings,
+        allRunners,
+        legWinners,
+        raceStartTime,
+        totalMiles: allLegs.reduce((s, l) => s + l.distance, 0),
+      },
+    })
+  } catch (error) {
+    console.error('Wrapup error:', error)
+    res.status(500).json({ success: false, error: 'Failed to load wrapup data' })
+  }
+})
+
 // Public config (PIN length for login UI)
 router.get('/config/pin-length', async (req, res) => {
   try {

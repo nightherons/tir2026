@@ -35,6 +35,7 @@ export const dashboardApi = {
   getAll: () => api.get('/dashboard'),
   getTeam: (teamId: string) => api.get(`/dashboard/team/${teamId}`),
   getLeaderboard: () => api.get('/leaderboard'),
+  getWrapup: () => api.get('/dashboard/wrapup'),
 }
 
 export const entryApi = {

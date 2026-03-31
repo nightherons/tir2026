@@ -1,5 +1,5 @@
 import { Outlet, Link } from 'react-router-dom'
-import { Timer, Radio, LogOut, Settings, ClipboardList } from 'lucide-react'
+import { Timer, Radio, LogOut, Settings, ClipboardList, BarChart3 } from 'lucide-react'
 import { NhrcBird } from '../icons/NhrcLogo'
 import { useSocketStore } from '../../store/socketStore'
 import { useAuthStore } from '../../store/authStore'
@@ -52,6 +52,14 @@ export default function MainLayout() {
                 isConnected ? "bg-green-500 animate-pulse" : "bg-red-500"
               )} />
             </div>
+
+            {/* Wrap-up link */}
+            <Button variant="ghost" size="sm" asChild>
+              <Link to="/wrapup" className="gap-2">
+                <BarChart3 className="h-4 w-4" />
+                <span className="hidden sm:inline">Wrap-Up</span>
+              </Link>
+            </Button>
 
             {/* Entry link - always visible */}
             <Button variant="ghost" size="sm" asChild>

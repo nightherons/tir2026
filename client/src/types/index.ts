@@ -116,6 +116,76 @@ export interface ApiResponse<T> {
   error?: string
 }
 
+// Wrapup types
+export interface WrapupLeg {
+  legNumber: number
+  distance: number
+  runnerName: string
+  projectedPace: number // sec/mi
+  actualPace: number | null
+  clockTime: number | null
+  kills: number
+}
+
+export interface WrapupRunnerLeg {
+  legNumber: number
+  distance: number
+  projectedPace: number
+  actualPace: number | null
+  clockTime: number | null
+  kills: number
+}
+
+export interface WrapupRunner {
+  name: string
+  vanNumber: number
+  runOrder: number
+  projectedPace: number
+  avgActualPace: number | null
+  totalMiles: number
+  totalKills: number
+  legs: WrapupRunnerLeg[]
+  teamName: string
+  teamColor: string
+}
+
+export interface WrapupTeam {
+  team: { id: string; name: string; city: string; color: string }
+  totalTime: number
+  projectedTime: number
+  paceAheadBehind: number
+  totalKills: number
+  completedLegs: number
+  place: number
+  timeBehindLeader: number
+  legs: WrapupLeg[]
+  runners: Omit<WrapupRunner, 'teamName' | 'teamColor'>[]
+}
+
+export interface WrapupLegWinnerEntry {
+  runnerName: string
+  teamName: string
+  teamColor: string
+  pace: number
+  clockTime: number
+  kills: number
+  distance: number
+}
+
+export interface WrapupLegWinner {
+  legNumber: number
+  distance: number
+  results: WrapupLegWinnerEntry[]
+}
+
+export interface WrapupData {
+  teamStandings: WrapupTeam[]
+  allRunners: WrapupRunner[]
+  legWinners: WrapupLegWinner[]
+  raceStartTime: string | null
+  totalMiles: number
+}
+
 // Socket event types
 export interface SocketEvents {
   'time:entered': { legResult: LegResult }
