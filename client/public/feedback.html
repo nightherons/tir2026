@@ -1418,6 +1418,7 @@
     <div class="success-icon">🏁</div>
     <h2>You're Done.</h2>
     <p>Thanks for taking the time. Every response helps us make TIR 2027 better than 2026. See you on the road.</p>
+    <p style="margin-top:20px;font-size:14px;color:var(--muted);">Redirecting to dashboard in <span id="countdown">5</span>s&hellip;</p>
     <div class="divider" style="margin-top:28px"></div>
   </div>
 </div>
@@ -1556,6 +1557,18 @@
       const success = document.getElementById('successScreen');
       success.style.display = 'block';
       window.scrollTo({ top: 0, behavior: 'smooth' });
+
+      // Countdown and redirect to dashboard
+      var secs = 5;
+      var countdownEl = document.getElementById('countdown');
+      var timer = setInterval(function() {
+        secs--;
+        countdownEl.textContent = secs;
+        if (secs <= 0) {
+          clearInterval(timer);
+          window.location.href = '/dashboard';
+        }
+      }, 1000);
     } catch (err) {
       console.error('Submit failed:', err);
       alert('Something went wrong submitting your feedback. Please try again.');
