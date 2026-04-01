@@ -81,7 +81,7 @@ export default function MainLayout() {
             <Button variant="ghost" size="sm" asChild>
               <Link to="/wrapup" className="gap-2">
                 <BarChart3 className="h-4 w-4" />
-                <span className="hidden sm:inline">Wrap-Up</span>
+                <span className="hidden sm:inline">2026 Wrap-Up</span>
               </Link>
             </Button>
 

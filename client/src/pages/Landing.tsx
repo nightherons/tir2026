@@ -117,7 +117,7 @@ export default function Landing() {
             className="w-48 flex items-center justify-center gap-2 bg-white/20 hover:bg-white/30 backdrop-blur-sm text-white py-3 rounded-lg border border-white/30 transition-all hover:scale-105"
           >
             {isFinished ? <BarChart3 className="w-5 h-5" /> : <Radio className="w-5 h-5" />}
-            <span className="font-medium">{isFinished ? 'Race Wrap-Up' : 'Live Dashboard'}</span>
+            <span className="font-medium">{isFinished ? '2026 Race Wrap-Up' : 'Live Dashboard'}</span>
           </button>
           <button
             onClick={() => setShowLoginModal(true)}

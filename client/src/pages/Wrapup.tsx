@@ -683,7 +683,7 @@ export default function Wrapup() {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
         <div className="text-center">
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Race Wrap-Up</h2>
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">2026 Race Wrap-Up</h2>
           <p className="text-sm text-muted-foreground mt-1">Post-race analysis and stats</p>
         </div>
 
