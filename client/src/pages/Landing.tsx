@@ -1,12 +1,9 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { LogIn, Radio, BarChart3 } from 'lucide-react'
 import { dashboardApi } from '../services/api'
 import LoginModal from '../components/LoginModal'
-
-// Race date: March 28, 2026
-const RACE_DATE = new Date('2026-03-28T06:00:00')
 
 interface TimeLeft {
   days: number
@@ -15,31 +12,28 @@ interface TimeLeft {
   seconds: number
 }
 
-function calculateTimeLeft(): TimeLeft {
-  const difference = RACE_DATE.getTime() - new Date().getTime()
+function CountdownTimer({ raceDate }: { raceDate: Date }) {
+  const calculateTimeLeft = useCallback((): TimeLeft => {
+    const difference = raceDate.getTime() - new Date().getTime()
+    if (difference <= 0) {
+      return { days: 0, hours: 0, minutes: 0, seconds: 0 }
+    }
+    return {
+      days: Math.floor(difference / (1000 * 60 * 60 * 24)),
+      hours: Math.floor((difference / (1000 * 60 * 60)) % 24),
+      minutes: Math.floor((difference / 1000 / 60) % 60),
+      seconds: Math.floor((difference / 1000) % 60),
+    }
+  }, [raceDate])
 
-  if (difference <= 0) {
-    return { days: 0, hours: 0, minutes: 0, seconds: 0 }
-  }
-
-  return {
-    days: Math.floor(difference / (1000 * 60 * 60 * 24)),
-    hours: Math.floor((difference / (1000 * 60 * 60)) % 24),
-    minutes: Math.floor((difference / 1000 / 60) % 60),
-    seconds: Math.floor((difference / 1000) % 60),
-  }
-}
-
-function CountdownTimer() {
   const [timeLeft, setTimeLeft] = useState<TimeLeft>(calculateTimeLeft())
 
   useEffect(() => {
     const timer = setInterval(() => {
       setTimeLeft(calculateTimeLeft())
     }, 1000)
-
     return () => clearInterval(timer)
-  }, [])
+  }, [calculateTimeLeft])
 
   return (
     <div className="flex gap-4 sm:gap-6">
@@ -72,7 +66,11 @@ export default function Landing() {
     staleTime: 60 * 1000,
   })
   const raceStatus = data?.data?.data?.raceStatus || 'pre-race'
+  const raceStartTime = data?.data?.data?.raceStartTime
   const isFinished = raceStatus === 'finished'
+
+  const raceDate = raceStartTime ? new Date(raceStartTime) : new Date('2027-03-20T06:00:00')
+  const raceDateLabel = raceDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
 
   return (
     <div className="relative min-h-screen overflow-hidden bg-black">
@@ -106,11 +104,11 @@ export default function Landing() {
           Texas Independence Relay
         </h1>
         <p className="text-xl sm:text-2xl text-white/90 text-center mb-12 drop-shadow-md">
-          March 28, 2026
+          {raceDateLabel}
         </p>
 
-        {/* Countdown Timer */}
-        <CountdownTimer />
+        {/* Countdown Timer - hidden when race is finished */}
+        {!isFinished && <CountdownTimer raceDate={raceDate} />}
 
         {/* Action Buttons */}
         <div className="mt-12 flex flex-col sm:flex-row items-center gap-4">
