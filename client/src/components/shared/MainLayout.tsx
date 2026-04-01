@@ -1,5 +1,5 @@
 import { Outlet, Link } from 'react-router-dom'
-import { Timer, Radio, LogOut, Settings, ClipboardList, BarChart3, LayoutDashboard, MessageSquare } from 'lucide-react'
+import { Radio, LogOut, Settings, ClipboardList, BarChart3, MessageSquare } from 'lucide-react'
 import { NhrcBird } from '../icons/NhrcLogo'
 import { useSocketStore } from '../../store/socketStore'
 import { useAuthStore } from '../../store/authStore'
@@ -53,14 +53,6 @@ export default function MainLayout() {
               )} />
             </div>
 
-            {/* Dashboard link */}
-            <Button variant="ghost" size="sm" asChild>
-              <Link to="/dashboard" className="gap-2">
-                <LayoutDashboard className="h-4 w-4" />
-                <span className="hidden sm:inline">Dashboard</span>
-              </Link>
-            </Button>
-
             {/* Wrap-up link */}
             <Button variant="ghost" size="sm" asChild>
               <Link to="/wrapup" className="gap-2">
@@ -75,14 +67,6 @@ export default function MainLayout() {
                 <MessageSquare className="h-4 w-4" />
                 <span className="hidden sm:inline">Feedback</span>
               </a>
-            </Button>
-
-            {/* Entry link - always visible */}
-            <Button variant="ghost" size="sm" asChild>
-              <Link to="/entry" className="gap-2">
-                <Timer className="h-4 w-4" />
-                <span className="hidden sm:inline">Enter Time</span>
-              </Link>
             </Button>
 
             {/* Auth-dependent links */}
