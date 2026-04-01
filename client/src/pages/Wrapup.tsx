@@ -21,6 +21,7 @@ import { formatTime, formatPace } from '../utils/time'
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card'
 import { Badge } from '../components/ui/badge'
 import { cn } from '@/lib/utils'
+import LegWinners from '../components/dashboard/LegWinners'
 import { NhrcBird } from '../components/icons/NhrcLogo'
 
 const teamChartColors: Record<string, string> = {
@@ -43,6 +44,7 @@ const teamBgColors: Record<string, { bg: string; text: string; border: string }>
 
 const sections = [
   { id: 'standings', label: 'Standings' },
+  { id: 'leg-winners', label: 'Legs' },
   { id: 'pace-by-leg', label: 'Pace/Leg' },
   { id: 'cumulative', label: 'Cumulative' },
   { id: 'vs-projection', label: 'vs Projected' },
@@ -687,6 +689,10 @@ export default function Wrapup() {
 
         <section id="standings">
           <TeamStandings teams={teamStandings} />
+        </section>
+
+        <section id="leg-winners">
+          <LegWinners />
         </section>
 
         <section id="pace-by-leg">
