@@ -60,7 +60,7 @@ export default function Landing() {
   const [showLoginModal, setShowLoginModal] = useState(false)
   const navigate = useNavigate()
 
-  const { data } = useQuery({
+  const { data, isLoading } = useQuery({
     queryKey: ['dashboard'],
     queryFn: () => dashboardApi.getAll(),
     staleTime: 60 * 1000,
@@ -107,8 +107,8 @@ export default function Landing() {
           {raceDateLabel}
         </p>
 
-        {/* Countdown Timer - hidden when race is finished */}
-        {!isFinished && <CountdownTimer raceDate={raceDate} />}
+        {/* Countdown Timer - hidden when race is finished or still loading */}
+        {!isLoading && !isFinished && <CountdownTimer raceDate={raceDate} />}
 
         {/* Action Buttons */}
         <div className="mt-12 flex flex-col sm:flex-row items-center gap-4">
