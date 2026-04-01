@@ -1,8 +1,10 @@
 import { Outlet, Link } from 'react-router-dom'
-import { Radio, LogOut, Settings, ClipboardList, BarChart3, MessageSquare } from 'lucide-react'
+import { useQuery } from '@tanstack/react-query'
+import { Radio, LogOut, Settings, ClipboardList, BarChart3, MessageSquare, LayoutDashboard, Timer } from 'lucide-react'
 import { NhrcBird } from '../icons/NhrcLogo'
 import { useSocketStore } from '../../store/socketStore'
 import { useAuthStore } from '../../store/authStore'
+import { dashboardApi } from '../../services/api'
 import { Button } from '../ui/button'
 import { Badge } from '../ui/badge'
 import { cn } from '@/lib/utils'
@@ -10,6 +12,14 @@ import { cn } from '@/lib/utils'
 export default function MainLayout() {
   const { isConnected } = useSocketStore()
   const { userType, logout } = useAuthStore()
+
+  const { data } = useQuery({
+    queryKey: ['dashboard'],
+    queryFn: () => dashboardApi.getAll(),
+    staleTime: 60 * 1000,
+  })
+  const raceStatus = data?.data?.data?.raceStatus || 'pre-race'
+  const isFinished = raceStatus === 'finished'
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
@@ -33,25 +43,39 @@ export default function MainLayout() {
 
           {/* Nav */}
           <nav className="flex items-center gap-2 sm:gap-4">
-            {/* Connection status */}
-            <Badge
-              variant={isConnected ? "default" : "destructive"}
-              className={cn(
-                "gap-1.5 hidden sm:flex",
-                isConnected && "bg-green-600 hover:bg-green-600"
-              )}
-            >
-              <Radio className={cn("h-3 w-3", isConnected && "animate-pulse")} />
-              {isConnected ? 'Live' : 'Offline'}
-            </Badge>
+            {/* Connection status - hidden when race is finished */}
+            {!isFinished && (
+              <>
+                <Badge
+                  variant={isConnected ? "default" : "destructive"}
+                  className={cn(
+                    "gap-1.5 hidden sm:flex",
+                    isConnected && "bg-green-600 hover:bg-green-600"
+                  )}
+                >
+                  <Radio className={cn("h-3 w-3", isConnected && "animate-pulse")} />
+                  {isConnected ? 'Live' : 'Offline'}
+                </Badge>
 
-            {/* Mobile live indicator */}
-            <div className="sm:hidden">
-              <div className={cn(
-                "h-2.5 w-2.5 rounded-full",
-                isConnected ? "bg-green-500 animate-pulse" : "bg-red-500"
-              )} />
-            </div>
+                {/* Mobile live indicator */}
+                <div className="sm:hidden">
+                  <div className={cn(
+                    "h-2.5 w-2.5 rounded-full",
+                    isConnected ? "bg-green-500 animate-pulse" : "bg-red-500"
+                  )} />
+                </div>
+              </>
+            )}
+
+            {/* Dashboard link - hidden when race is finished */}
+            {!isFinished && (
+              <Button variant="ghost" size="sm" asChild>
+                <Link to="/dashboard" className="gap-2">
+                  <LayoutDashboard className="h-4 w-4" />
+                  <span className="hidden sm:inline">Dashboard</span>
+                </Link>
+              </Button>
+            )}
 
             {/* Wrap-up link */}
             <Button variant="ghost" size="sm" asChild>
@@ -68,6 +92,16 @@ export default function MainLayout() {
                 <span className="hidden sm:inline">Feedback</span>
               </a>
             </Button>
+
+            {/* Entry link - hidden when race is finished */}
+            {!isFinished && (
+              <Button variant="ghost" size="sm" asChild>
+                <Link to="/entry" className="gap-2">
+                  <Timer className="h-4 w-4" />
+                  <span className="hidden sm:inline">Enter Time</span>
+                </Link>
+              </Button>
+            )}
 
             {/* Auth-dependent links */}
             {userType ? (
