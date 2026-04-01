@@ -85,3 +85,12 @@ model RaceConfig {
   key   String @unique
   value String
 }
+
+model Feedback {
+  id          String   @id @default(cuid())
+  runnerName  String
+  team        String?
+  van         String?
+  data        String   // JSON blob of all form responses
+  submittedAt DateTime @default(now())
+}

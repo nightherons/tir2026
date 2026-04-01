@@ -1,5 +1,5 @@
 import { Outlet, Link } from 'react-router-dom'
-import { Timer, Radio, LogOut, Settings, ClipboardList, BarChart3, LayoutDashboard } from 'lucide-react'
+import { Timer, Radio, LogOut, Settings, ClipboardList, BarChart3, LayoutDashboard, MessageSquare } from 'lucide-react'
 import { NhrcBird } from '../icons/NhrcLogo'
 import { useSocketStore } from '../../store/socketStore'
 import { useAuthStore } from '../../store/authStore'
@@ -67,6 +67,14 @@ export default function MainLayout() {
                 <BarChart3 className="h-4 w-4" />
                 <span className="hidden sm:inline">Wrap-Up</span>
               </Link>
+            </Button>
+
+            {/* Feedback link */}
+            <Button variant="ghost" size="sm" asChild>
+              <a href="/feedback.html" className="gap-2">
+                <MessageSquare className="h-4 w-4" />
+                <span className="hidden sm:inline">Feedback</span>
+              </a>
             </Button>
 
             {/* Entry link - always visible */}

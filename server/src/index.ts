@@ -12,6 +12,7 @@ import entryRoutes from './routes/entry.js'
 import runnerRoutes from './routes/runner.js'
 import captainRoutes from './routes/captain.js'
 import adminRoutes from './routes/admin.js'
+import feedbackRoutes from './routes/feedback.js'
 import { setupSocketHandlers } from './socket/handlers.js'
 import { seedLegs } from './utils/seedLegs.js'
 
@@ -55,6 +56,7 @@ app.use('/api/entry', entryRoutes)
 app.use('/api/runner', runnerRoutes)
 app.use('/api/captain', captainRoutes)
 app.use('/api/admin', adminRoutes)
+app.use('/api/feedback', feedbackRoutes)
 
 // Socket.io
 setupSocketHandlers(io)

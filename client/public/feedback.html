@@ -1,0 +1,1568 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TIR 2026 — Post-Race Feedback</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;1,300&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --navy: #08104a;
+    --navy-mid: #0d1757;
+    --navy-light: #142068;
+    --red: #c0392b;
+    --red-light: #e74c3c;
+    --grey: #8c9baa;
+    --grey-light: #b0bec9;
+    --white: #eef1f4;
+    --muted: #6b7f92;
+    --card-bg: rgba(255,255,255,0.04);
+    --border: rgba(192,57,43,0.22);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background-color: var(--navy);
+    color: var(--white);
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 300;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Background texture */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background:
+      radial-gradient(ellipse 80% 50% at 50% -10%, rgba(192,57,43,0.07) 0%, transparent 60%),
+      radial-gradient(ellipse 40% 40% at 90% 90%, rgba(140,155,170,0.04) 0%, transparent 50%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .container {
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 48px 24px 80px;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* Header */
+  .header {
+    text-align: center;
+    margin-bottom: 56px;
+    animation: fadeUp 0.8s ease both;
+  }
+
+  .logo-lockup {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 28px;
+  }
+
+  .logo-bird {
+    width: 280px;
+    height: auto;
+    
+  }
+
+  .club-name {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 22px;
+    letter-spacing: 0.18em;
+    color: var(--grey-light);
+    line-height: 1;
+  }
+
+  .club-sub {
+    font-size: 10px;
+    letter-spacing: 0.3em;
+    color: var(--muted);
+    text-transform: uppercase;
+    margin-top: 2px;
+  }
+
+  .race-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(48px, 10vw, 80px);
+    letter-spacing: 0.04em;
+    line-height: 0.95;
+    color: var(--white);
+    margin-bottom: 12px;
+  }
+
+  .race-title span {
+    color: var(--red);
+  }
+
+  .subtitle {
+    font-size: 14px;
+    color: var(--muted);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+
+  .divider {
+    width: 60px;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, var(--red), transparent);
+    margin: 20px auto 0;
+  }
+
+  /* Section labels */
+  .section-label {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 11px;
+    letter-spacing: 0.3em;
+    color: var(--red);
+    text-transform: uppercase;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .section-label::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  /* Cards */
+  .card {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 2px;
+    padding: 28px 28px 24px;
+    margin-bottom: 20px;
+    animation: fadeUp 0.6s ease both;
+    transition: border-color 0.2s;
+  }
+
+  .card:hover {
+    border-color: rgba(192,57,43,0.45);
+  }
+
+  .card-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 20px;
+    letter-spacing: 0.08em;
+    color: var(--white);
+    margin-bottom: 6px;
+  }
+
+  .card-desc {
+    font-size: 13px;
+    color: var(--muted);
+    margin-bottom: 18px;
+    line-height: 1.6;
+  }
+
+  /* Form elements */
+  label {
+    display: block;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--white);
+    margin-bottom: 8px;
+    letter-spacing: 0.02em;
+  }
+
+  label .req {
+    color: var(--red);
+    margin-left: 3px;
+  }
+
+  select, input[type="text"], input[type="email"], textarea {
+    width: 100%;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 2px;
+    color: var(--white);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    font-weight: 300;
+    padding: 11px 14px;
+    outline: none;
+    transition: border-color 0.2s, background 0.2s;
+    appearance: none;
+    -webkit-appearance: none;
+  }
+
+  select {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23c0392b' stroke-width='1.5' fill='none'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 14px center;
+    padding-right: 36px;
+    cursor: pointer;
+  }
+
+  select option {
+    background: var(--navy-mid);
+    color: var(--white);
+  }
+
+  select:focus, input:focus, textarea:focus {
+    border-color: var(--red);
+    background: rgba(192,57,43,0.04);
+  }
+
+  textarea {
+    resize: vertical;
+    min-height: 90px;
+    line-height: 1.6;
+  }
+
+  .form-row {
+    margin-bottom: 18px;
+  }
+
+  .form-row:last-child { margin-bottom: 0; }
+
+  .two-col {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+  }
+
+  /* Star rating */
+  .star-group {
+    display: flex;
+    gap: 6px;
+    margin-top: 2px;
+  }
+
+  .star-group input[type="radio"] { display: none; }
+
+  .star-group label {
+    font-size: 26px;
+    color: rgba(255,255,255,0.15);
+    cursor: pointer;
+    transition: color 0.15s, transform 0.1s;
+    margin: 0;
+    line-height: 1;
+    user-select: none;
+  }
+
+  .star-group:hover label { color: rgba(192,57,43,0.4); }
+  .star-group label:hover,
+  .star-group label:hover ~ label { color: rgba(192,57,43,0.4) !important; }
+  .star-group input:checked ~ label { color: rgba(255,255,255,0.15) !important; }
+  .star-group label:has(~ input:checked),
+  .star-group input:checked + label { color: var(--red) !important; }
+
+  /* Simpler star approach using CSS */
+  .stars {
+    display: flex;
+    flex-direction: row-reverse;
+    gap: 4px;
+  }
+
+  .stars input { display: none; }
+
+  .stars label {
+    font-size: 28px;
+    color: rgba(255,255,255,0.15);
+    cursor: pointer;
+    transition: color 0.15s;
+    margin: 0;
+    line-height: 1;
+  }
+
+  .stars label:hover,
+  .stars label:hover ~ label,
+  .stars input:checked ~ label {
+    color: var(--red) !important;
+  }
+
+  /* Scale buttons */
+  .scale-group {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+
+  .scale-group input[type="radio"] { display: none; }
+
+  .scale-group label {
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 2px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s;
+    color: var(--muted);
+    margin: 0;
+  }
+
+  .scale-group input:checked + label {
+    background: var(--red);
+    border-color: var(--red);
+    color: var(--white);
+    font-weight: 600;
+  }
+
+  .scale-group label:hover {
+    border-color: var(--red);
+    color: var(--white);
+  }
+
+  .scale-labels {
+    display: flex;
+    justify-content: space-between;
+    font-size: 11px;
+    color: var(--muted);
+    margin-top: 6px;
+    letter-spacing: 0.04em;
+  }
+
+  /* Checkbox group */
+  .check-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .check-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+  }
+
+  .check-item input[type="checkbox"] { display: none; }
+
+  .check-box {
+    width: 18px;
+    height: 18px;
+    border: 1px solid rgba(255,255,255,0.25);
+    border-radius: 2px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s;
+  }
+
+  .check-item input:checked + .check-box {
+    background: var(--red);
+    border-color: var(--red);
+  }
+
+  .check-item input:checked + .check-box::after {
+    content: '✓';
+    font-size: 11px;
+    color: var(--white);
+    font-weight: 700;
+  }
+
+  .check-item span {
+    font-size: 14px;
+    color: var(--white);
+    font-weight: 300;
+  }
+
+  /* Progress */
+  .progress-bar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--red), var(--red-light));
+    transition: width 0.4s ease;
+    z-index: 100;
+  }
+
+  /* Submit */
+  .submit-area {
+    text-align: center;
+    margin-top: 40px;
+    animation: fadeUp 0.6s ease both;
+  }
+
+  .submit-btn {
+    background: var(--red);
+    color: var(--navy);
+    border: none;
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 18px;
+    letter-spacing: 0.15em;
+    padding: 16px 56px;
+    border-radius: 2px;
+    cursor: pointer;
+    transition: all 0.2s;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .submit-btn::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: white;
+    opacity: 0;
+    transition: opacity 0.2s;
+  }
+
+  .submit-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 32px rgba(192,57,43,0.35); }
+  .submit-btn:hover::before { opacity: 0.08; }
+  .submit-btn:active { transform: translateY(0); }
+
+  .submit-note {
+    font-size: 12px;
+    color: var(--muted);
+    margin-top: 14px;
+    letter-spacing: 0.04em;
+  }
+
+  /* Success state */
+  .success-screen {
+    display: none;
+    text-align: center;
+    padding: 80px 24px;
+    animation: fadeUp 0.6s ease both;
+  }
+
+  .success-icon {
+    font-size: 56px;
+    margin-bottom: 24px;
+  }
+
+  .success-screen h2 {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 48px;
+    letter-spacing: 0.06em;
+    color: var(--red);
+    margin-bottom: 12px;
+  }
+
+  .success-screen p {
+    color: var(--muted);
+    font-size: 16px;
+    line-height: 1.7;
+    max-width: 400px;
+    margin: 0 auto;
+  }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .card:nth-child(1) { animation-delay: 0.1s; }
+  .card:nth-child(2) { animation-delay: 0.2s; }
+  .card:nth-child(3) { animation-delay: 0.3s; }
+  .card:nth-child(4) { animation-delay: 0.4s; }
+  .card:nth-child(5) { animation-delay: 0.5s; }
+  .card:nth-child(6) { animation-delay: 0.6s; }
+
+  /* Supply rating buttons */
+  .supply-btn {
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 0.03em;
+    padding: 6px 10px;
+    border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 2px;
+    cursor: pointer;
+    color: var(--muted);
+    white-space: nowrap;
+    transition: all 0.15s;
+    margin: 0;
+    line-height: 1;
+  }
+
+  .supply-btn:hover { border-color: var(--red); color: var(--white); }
+
+  input[type="radio"]:checked + .supply-btn {
+    background: var(--red);
+    border-color: var(--red);
+    color: var(--navy);
+  }
+
+  .supply-mid { border-color: rgba(255,255,255,0.1); }
+
+  /* Radio box (circle) for team format */
+  .radio-box {
+    border-radius: 50% !important;
+    flex-shrink: 0;
+  }
+
+  input[type="radio"]:checked ~ .check-item .radio-box,
+  .check-item input[type="radio"]:checked + .radio-box {
+    background: var(--red);
+    border-color: var(--red);
+  }
+
+  .check-item input[type="radio"]:checked + .radio-box::after {
+    content: '';
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--navy);
+    display: block;
+    margin: auto;
+  }
+
+  @media (max-width: 560px) {
+    .supply-btn { font-size: 11px; padding: 5px 7px; }
+    [style*="grid-template-columns:1fr auto"] { grid-template-columns: 1fr; gap: 8px; }
+  }
+
+  @media (max-width: 520px) {
+    .two-col { grid-template-columns: 1fr; }
+    .scale-group label { width: 36px; height: 36px; }
+  }
+
+  /* Inline conditional notes */
+  .expandable-check { display: flex; flex-direction: column; }
+
+  .inline-note {
+    min-height: 64px;
+    margin-left: 28px;
+    margin-top: 6px !important;
+    border-left: 2px solid var(--red) !important;
+    border-top: none !important;
+    border-right: 1px solid rgba(255,255,255,0.08) !important;
+    border-bottom: 1px solid rgba(255,255,255,0.08) !important;
+    border-radius: 0 2px 2px 0 !important;
+    background: rgba(192,57,43,0.04) !important;
+    font-size: 13px;
+    animation: expandNote 0.2s ease both;
+  }
+
+  @keyframes expandNote {
+    from { opacity: 0; transform: translateY(-4px); max-height: 0; }
+    to { opacity: 1; transform: translateY(0); max-height: 200px; }
+  }
+
+  /* Gear note same style */
+  .gear-note {
+    margin-left: 0 !important;
+  }
+</style>
+</head>
+<body>
+
+<div class="progress-bar" id="progressBar" style="width:0%"></div>
+
+<div class="container">
+  <div class="header">
+    <div class="logo-lockup">
+      <img src="data:image/png;base64,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AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA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" class="logo-bird" alt="Night Heron Running Club">
+    </div>
+    <div class="race-title">TIR <span>2026</span><br>Debrief</div>
+    <div class="subtitle">Post-Race Feedback · March 28–29</div>
+    <div class="divider"></div>
+  </div>
+
+  <form id="feedbackForm">
+
+    <!-- 1. Identity -->
+    <div class="section-label">01 — About You</div>
+    <div class="card">
+      <div class="card-title">Who are you?</div>
+      <div class="card-desc">Help us match your feedback to your experience on the course.</div>
+
+      <div class="form-row">
+        <label>Your Name <span class="req">*</span></label>
+        <select name="runner_name" required>
+          <option value="" disabled selected>Select your name</option>
+          <optgroup label="— Runners —">
+            <option>Adams, Jonathan</option>
+            <option>Alexander, Jairus</option>
+            <option>Alvarado, Adrian</option>
+            <option>Ashmore, Scott</option>
+            <option>Benito, Fernando</option>
+            <option>Berg, Aaron</option>
+            <option>Byrd, Nathan</option>
+            <option>Cione, Nick</option>
+            <option>Edquist, Callan</option>
+            <option>Evans, John</option>
+            <option>Foederer, Andrew</option>
+            <option>Foederer, Logan</option>
+            <option>Foster, Cody</option>
+            <option>Gaspard, Tyson</option>
+            <option>Gittemeier, Joel</option>
+            <option>Gullo, Matthew</option>
+            <option>Hinze, Hudson</option>
+            <option>Jimata, Koket</option>
+            <option>Lanham, Luke</option>
+            <option>Landes, Stephen</option>
+            <option>Le, Andy</option>
+            <option>Leibert, Luke</option>
+            <option>Leibert, Tony</option>
+            <option>Mahoney, Peter</option>
+            <option>Mankin, Blake</option>
+            <option>Martone, Matt</option>
+            <option>Matthews, Kevin</option>
+            <option>McCray, Marshall</option>
+            <option>Mcillece, Bobby</option>
+            <option>Mcillece, Jay</option>
+            <option>Mizell, Cory</option>
+            <option>Moore, Chance</option>
+            <option>Nasrallah, Garrett</option>
+            <option>Norman, Blake</option>
+            <option>Pontbriand, Ryan</option>
+            <option>Raskosky, Gustavo</option>
+            <option>Ray, Kyle</option>
+            <option>Robertson, Adam</option>
+            <option>Ruff, Luke</option>
+            <option>Rushing, Daylan</option>
+            <option>Salazar, Jaren</option>
+            <option>Shannon, Andrew</option>
+            <option>Trotter, Luke</option>
+            <option>Tully, Ryan</option>
+            <option>Vaeth, Jimmy</option>
+            <option>Walluk, Seth</option>
+            <option>Woodcock, Doug</option>
+            <option>Zdenek, Michael</option>
+          </optgroup>
+        </select>
+      </div>
+
+      <div class="two-col">
+        <div class="form-row">
+          <label>Team Color</label>
+          <select name="team">
+            <option value="" disabled selected>Select team</option>
+            <option>Black</option>
+            <option>Blue</option>
+            <option>Grey</option>
+            <option>White</option>
+          </select>
+        </div>
+        <div class="form-row">
+          <label>Van</label>
+          <select name="van">
+            <option value="" disabled selected>Select van</option>
+            <option>Van 1</option>
+            <option>Van 2</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <label>Years running TIR (including 2026)</label>
+        <select name="years_tir">
+          <option value="" disabled selected>Select</option>
+          <option>First year — 2026 was my debut</option>
+          <option>2 years</option>
+          <option>3 years</option>
+          <option>4 years</option>
+          <option>5+ years</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- 2. Pre-Race -->
+    <div class="section-label">02 — Pre-Race Prep</div>
+    <div class="card">
+      <div class="card-title">Before the gun</div>
+      <div class="card-desc">Help us improve how we handle the lead-up to race day.</div>
+
+      <div class="form-row">
+        <label>How would you rate the pre-race logistics?</label>
+        <div class="scale-group">
+          <input type="radio" name="pre_race_logistics" id="prl1" value="1"><label for="prl1">1</label>
+          <input type="radio" name="pre_race_logistics" id="prl2" value="2"><label for="prl2">2</label>
+          <input type="radio" name="pre_race_logistics" id="prl3" value="3"><label for="prl3">3</label>
+          <input type="radio" name="pre_race_logistics" id="prl4" value="4"><label for="prl4">4</label>
+          <input type="radio" name="pre_race_logistics" id="prl5" value="5"><label for="prl5">5</label>
+          <input type="radio" name="pre_race_logistics" id="prl6" value="6"><label for="prl6">6</label>
+          <input type="radio" name="pre_race_logistics" id="prl7" value="7"><label for="prl7">7</label>
+          <input type="radio" name="pre_race_logistics" id="prl8" value="8"><label for="prl8">8</label>
+          <input type="radio" name="pre_race_logistics" id="prl9" value="9"><label for="prl9">9</label>
+          <input type="radio" name="pre_race_logistics" id="prl10" value="10"><label for="prl10">10</label>
+        </div>
+        <div class="scale-labels"><span>Chaotic</span><span>Seamless</span></div>
+      </div>
+
+      <div class="form-row">
+        <label>What specifically could be improved in pre-race prep or day-of logistics?</label>
+        <textarea name="pre_race_improve" placeholder="e.g. &ldquo;Sign-up sheet came out too late&rdquo;, &ldquo;Van pickup / stocking felt disorganized&rdquo;, &ldquo;Pre-race meeting ran too long&rdquo;, &ldquo;Leg assignments weren&rsquo;t clear until last minute&rdquo;, &ldquo;Needed more lead time on what to bring&rdquo;&hellip;"></textarea>
+      </div>
+
+      <div class="form-row">
+        <label>Did you participate in Coach Jay&rsquo;s TIR training plan this year?</label>
+        <select name="training_plan_used" id="trainingPlanUsed">
+          <option value="" disabled selected>Select</option>
+          <option value="yes_full">Yes — followed it closely</option>
+          <option value="yes_partial">Yes — used parts of it</option>
+          <option value="no_own_plan">No — followed my own plan</option>
+          <option value="no_unaware">No — wasn't aware of it</option>
+          <option value="no_didnt_train">No — didn't train specifically for TIR</option>
+        </select>
+      </div>
+
+      <div class="form-row" id="trainingPlanFeedback" style="display:none;">
+        <label>How much value did you get from the training plan?</label>
+        <div class="scale-group">
+          <input type="radio" name="training_plan_value" id="tpv1" value="1"><label for="tpv1">1</label>
+          <input type="radio" name="training_plan_value" id="tpv2" value="2"><label for="tpv2">2</label>
+          <input type="radio" name="training_plan_value" id="tpv3" value="3"><label for="tpv3">3</label>
+          <input type="radio" name="training_plan_value" id="tpv4" value="4"><label for="tpv4">4</label>
+          <input type="radio" name="training_plan_value" id="tpv5" value="5"><label for="tpv5">5</label>
+          <input type="radio" name="training_plan_value" id="tpv6" value="6"><label for="tpv6">6</label>
+          <input type="radio" name="training_plan_value" id="tpv7" value="7"><label for="tpv7">7</label>
+          <input type="radio" name="training_plan_value" id="tpv8" value="8"><label for="tpv8">8</label>
+          <input type="radio" name="training_plan_value" id="tpv9" value="9"><label for="tpv9">9</label>
+          <input type="radio" name="training_plan_value" id="tpv10" value="10"><label for="tpv10">10</label>
+        </div>
+        <div class="scale-labels"><span>Not helpful</span><span>Extremely valuable</span></div>
+      </div>
+
+      <div class="form-row" id="trainingPlanNotes" style="display:none;">
+        <label>Any feedback on the training plan — what worked, what to change?</label>
+        <textarea name="training_plan_notes" placeholder="e.g. &ldquo;Loved the long run structure&rdquo;, &ldquo;Needed more speed work&rdquo;, &ldquo;Would have liked more guidance on back-to-back legs&rdquo;&hellip;"></textarea>
+      </div>
+    </div>
+
+    <!-- 3. Logistics -->
+    <div class="section-label">03 — Logistics & Operations</div>
+    <div class="card">
+      <div class="card-title">The machine</div>
+      <div class="card-desc">Van flow, timing, support — how did the operation run?</div>
+
+      <div class="form-row">
+        <label>Rate the overall van logistics (transitions, timing, navigation)</label>
+        <div class="scale-group">
+          <input type="radio" name="logistics" id="l1" value="1"><label for="l1">1</label>
+          <input type="radio" name="logistics" id="l2" value="2"><label for="l2">2</label>
+          <input type="radio" name="logistics" id="l3" value="3"><label for="l3">3</label>
+          <input type="radio" name="logistics" id="l4" value="4"><label for="l4">4</label>
+          <input type="radio" name="logistics" id="l5" value="5"><label for="l5">5</label>
+          <input type="radio" name="logistics" id="l6" value="6"><label for="l6">6</label>
+          <input type="radio" name="logistics" id="l7" value="7"><label for="l7">7</label>
+          <input type="radio" name="logistics" id="l8" value="8"><label for="l8">8</label>
+          <input type="radio" name="logistics" id="l9" value="9"><label for="l9">9</label>
+          <input type="radio" name="logistics" id="l10" value="10"><label for="l10">10</label>
+        </div>
+        <div class="scale-labels"><span>Total chaos</span><span>Military precision</span></div>
+      </div>
+
+      <div class="form-row">
+        <label>Were there any logistical breakdowns? (Select all that apply — a note field will appear for each)</label>
+        <div class="check-group" id="breakdownGroup">
+          <div class="expandable-check">
+            <label class="check-item"><input type="checkbox" name="breakdown" value="late_transitions" class="breakdown-cb" data-note="note_late_transitions"><span class="check-box"></span><span>Late or missed transitions</span></label>
+            <textarea name="note_late_transitions" class="inline-note" placeholder="What happened?" style="display:none"></textarea>
+          </div>
+          <div class="expandable-check">
+            <label class="check-item"><input type="checkbox" name="breakdown" value="navigation" class="breakdown-cb" data-note="note_navigation"><span class="check-box"></span><span>Navigation issues / wrong turns</span></label>
+            <textarea name="note_navigation" class="inline-note" placeholder="What happened?" style="display:none"></textarea>
+          </div>
+          <div class="expandable-check">
+            <label class="check-item"><input type="checkbox" name="breakdown" value="food_water" class="breakdown-cb" data-note="note_food_water"><span class="check-box"></span><span>Inadequate food / hydration on the van</span></label>
+            <textarea name="note_food_water" class="inline-note" placeholder="What was missing or short?" style="display:none"></textarea>
+          </div>
+          <div class="expandable-check">
+            <label class="check-item"><input type="checkbox" name="breakdown" value="sleep" class="breakdown-cb" data-note="note_sleep"><span class="check-box"></span><span>Insufficient sleep / rest time</span></label>
+            <textarea name="note_sleep" class="inline-note" placeholder="When / why?" style="display:none"></textarea>
+          </div>
+          <div class="expandable-check">
+            <label class="check-item"><input type="checkbox" name="breakdown" value="communication" class="breakdown-cb" data-note="note_communication"><span class="check-box"></span><span>Poor communication between vans</span></label>
+            <textarea name="note_communication" class="inline-note" placeholder="What broke down?" style="display:none"></textarea>
+          </div>
+          <div class="expandable-check">
+            <label class="check-item"><input type="checkbox" name="breakdown" value="van_crowded" class="breakdown-cb" data-note="note_van_crowded"><span class="check-box"></span><span>Van too crowded / uncomfortable</span></label>
+            <textarea name="note_van_crowded" class="inline-note" placeholder="Any specifics?" style="display:none"></textarea>
+          </div>
+          <div class="expandable-check">
+            <label class="check-item"><input type="checkbox" name="breakdown" value="other_breakdown" class="breakdown-cb" data-note="note_other_breakdown"><span class="check-box"></span><span>Something else</span></label>
+            <textarea name="note_other_breakdown" class="inline-note" placeholder="Describe the issue…" style="display:none"></textarea>
+          </div>
+          <label class="check-item"><input type="checkbox" name="breakdown" value="none"><span class="check-box"></span><span>No issues — ran smooth</span></label>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- 4. Food & Supplies -->
+    <div class="section-label">04 — Food & Supplies</div>
+    <div class="card">
+      <div class="card-title">Stocking the van</div>
+      <div class="card-desc">For each item we provided, tell us if we had too much, about right, or not enough. Be honest — this directly shapes what we buy in 2027.</div>
+
+      <div class="form-row">
+        <label style="font-size:11px;letter-spacing:0.2em;color:var(--muted);text-transform:uppercase;margin-bottom:14px;">Race-Day Food</label>
+
+        <div style="display:grid;gap:12px;">
+
+          <div style="display:grid;grid-template-columns:1fr auto;align-items:center;gap:12px;padding:12px 14px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);border-radius:2px;">
+            <span style="font-size:14px;">🍗 Chicken &amp; Rice Bowls</span>
+            <div style="display:flex;gap:6px;">
+              <input type="radio" name="food_chicken_rice" id="cr_less" value="too_much" style="display:none"><label for="cr_less" class="supply-btn">Too much</label>
+              <input type="radio" name="food_chicken_rice" id="cr_right" value="about_right" style="display:none"><label for="cr_right" class="supply-btn supply-mid">About right</label>
+              <input type="radio" name="food_chicken_rice" id="cr_more" value="not_enough" style="display:none"><label for="cr_more" class="supply-btn">Not enough</label>
+            </div>
+          </div>
+
+          <div style="display:grid;grid-template-columns:1fr auto;align-items:center;gap:12px;padding:12px 14px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);border-radius:2px;">
+            <span style="font-size:14px;">🍠 Sweet Potatoes</span>
+            <div style="display:flex;gap:6px;">
+              <input type="radio" name="food_sweet_potato" id="sp_less" value="too_much" style="display:none"><label for="sp_less" class="supply-btn">Too much</label>
+              <input type="radio" name="food_sweet_potato" id="sp_right" value="about_right" style="display:none"><label for="sp_right" class="supply-btn supply-mid">About right</label>
+              <input type="radio" name="food_sweet_potato" id="sp_more" value="not_enough" style="display:none"><label for="sp_more" class="supply-btn">Not enough</label>
+            </div>
+          </div>
+
+          <div style="display:grid;grid-template-columns:1fr auto;align-items:center;gap:12px;padding:12px 14px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);border-radius:2px;">
+            <span style="font-size:14px;">🍌 Bananas</span>
+            <div style="display:flex;gap:6px;">
+              <input type="radio" name="food_bananas" id="bn_less" value="too_much" style="display:none"><label for="bn_less" class="supply-btn">Too much</label>
+              <input type="radio" name="food_bananas" id="bn_right" value="about_right" style="display:none"><label for="bn_right" class="supply-btn supply-mid">About right</label>
+              <input type="radio" name="food_bananas" id="bn_more" value="not_enough" style="display:none"><label for="bn_more" class="supply-btn">Not enough</label>
+            </div>
+          </div>
+
+          <div style="display:grid;grid-template-columns:1fr auto;align-items:center;gap:12px;padding:12px 14px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);border-radius:2px;">
+            <span style="font-size:14px;">🥜 Bread, PB &amp; Jelly</span>
+            <div style="display:flex;gap:6px;">
+              <input type="radio" name="food_pbj" id="pbj_less" value="too_much" style="display:none"><label for="pbj_less" class="supply-btn">Too much</label>
+              <input type="radio" name="food_pbj" id="pbj_right" value="about_right" style="display:none"><label for="pbj_right" class="supply-btn supply-mid">About right</label>
+              <input type="radio" name="food_pbj" id="pbj_more" value="not_enough" style="display:none"><label for="pbj_more" class="supply-btn">Not enough</label>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <div class="form-row">
+        <label style="font-size:11px;letter-spacing:0.2em;color:var(--muted);text-transform:uppercase;margin-bottom:14px;">Hydration</label>
+
+        <div style="display:grid;gap:12px;">
+
+          <div style="display:grid;grid-template-columns:1fr auto;align-items:center;gap:12px;padding:12px 14px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);border-radius:2px;">
+            <span style="font-size:14px;">🫙 Gallon Jugs of Water</span>
+            <div style="display:flex;gap:6px;">
+              <input type="radio" name="drink_jugs" id="gj_less" value="too_much" style="display:none"><label for="gj_less" class="supply-btn">Too much</label>
+              <input type="radio" name="drink_jugs" id="gj_right" value="about_right" style="display:none"><label for="gj_right" class="supply-btn supply-mid">About right</label>
+              <input type="radio" name="drink_jugs" id="gj_more" value="not_enough" style="display:none"><label for="gj_more" class="supply-btn">Not enough</label>
+            </div>
+          </div>
+
+          <div style="display:grid;grid-template-columns:1fr auto;align-items:center;gap:12px;padding:12px 14px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);border-radius:2px;">
+            <span style="font-size:14px;">💧 Bottled Water</span>
+            <div style="display:flex;gap:6px;">
+              <input type="radio" name="drink_bottles" id="bw_less" value="too_much" style="display:none"><label for="bw_less" class="supply-btn">Too much</label>
+              <input type="radio" name="drink_bottles" id="bw_right" value="about_right" style="display:none"><label for="bw_right" class="supply-btn supply-mid">About right</label>
+              <input type="radio" name="drink_bottles" id="bw_more" value="not_enough" style="display:none"><label for="bw_more" class="supply-btn">Not enough</label>
+            </div>
+          </div>
+
+          <div style="display:grid;grid-template-columns:1fr auto;align-items:center;gap:12px;padding:12px 14px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);border-radius:2px;">
+            <span style="font-size:14px;">⚡ Hydration Powder</span>
+            <div style="display:flex;gap:6px;">
+              <input type="radio" name="drink_powder" id="hp_less" value="too_much" style="display:none"><label for="hp_less" class="supply-btn">Too much</label>
+              <input type="radio" name="drink_powder" id="hp_right" value="about_right" style="display:none"><label for="hp_right" class="supply-btn supply-mid">About right</label>
+              <input type="radio" name="drink_powder" id="hp_more" value="not_enough" style="display:none"><label for="hp_more" class="supply-btn">Not enough</label>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <div class="form-row">
+        <label>Anything we stocked that you never touched — i.e. we could cut it?</label>
+        <textarea name="supplies_cut" placeholder="e.g. "Nobody ate the granola bars", "We had way too many chips"…"></textarea>
+      </div>
+
+      <div class="form-row">
+        <label>What should we have had that we didn't? (food, gear, or other supplies)</label>
+        <textarea name="supplies_add" placeholder="e.g. "More protein options", "Foam roller", "Portable phone chargers", "Wet wipes"…"></textarea>
+      </div>
+    </div>
+
+    <!-- 5. Gear & Swag -->
+    <div class="section-label">05 — Gear &amp; Swag</div>
+    <div class="card">
+      <div class="card-title">Worth the spend?</div>
+      <div class="card-desc">We invested in some extras this year. Tell us if each was worth it or if you'd rather we kept costs lower.</div>
+
+      <div class="form-row">
+        <label style="font-size:11px;letter-spacing:0.2em;color:var(--muted);text-transform:uppercase;margin-bottom:14px;">Apparel</label>
+        <div style="display:grid;gap:10px;">
+
+          <div style="padding:14px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);border-radius:2px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;">
+              <span style="font-size:14px;">🧢 Running Hat (performance)</span>
+              <div style="display:flex;gap:6px;">
+                <input type="radio" name="gear_running_hat" id="rh_yes" value="worth_it" style="display:none"><label for="rh_yes" class="supply-btn">Worth it</label>
+                <input type="radio" name="gear_running_hat" id="rh_meh" value="neutral" style="display:none"><label for="rh_meh" class="supply-btn supply-mid">Neutral</label>
+                <input type="radio" name="gear_running_hat" id="rh_no" value="cut_costs" style="display:none"><label for="rh_no" class="supply-btn">Cut costs</label>
+              </div>
+            </div>
+            <textarea name="note_running_hat" class="inline-note gear-note" placeholder="Any comments on the running hat?" style="display:none;margin-top:10px;"></textarea>
+          </div>
+
+          <div style="padding:14px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);border-radius:2px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;">
+              <span style="font-size:14px;">🪖 Casual Hat (lifestyle)</span>
+              <div style="display:flex;gap:6px;">
+                <input type="radio" name="gear_casual_hat" id="ch_yes" value="worth_it" style="display:none"><label for="ch_yes" class="supply-btn">Worth it</label>
+                <input type="radio" name="gear_casual_hat" id="ch_meh" value="neutral" style="display:none"><label for="ch_meh" class="supply-btn supply-mid">Neutral</label>
+                <input type="radio" name="gear_casual_hat" id="ch_no" value="cut_costs" style="display:none"><label for="ch_no" class="supply-btn">Cut costs</label>
+              </div>
+            </div>
+            <textarea name="note_casual_hat" class="inline-note gear-note" placeholder="Any comments on the casual hat?" style="display:none;margin-top:10px;"></textarea>
+          </div>
+
+        </div>
+      </div>
+
+      <div class="form-row">
+        <label style="font-size:11px;letter-spacing:0.2em;color:var(--muted);text-transform:uppercase;margin-bottom:14px;">Van Extras &amp; Fun Stuff</label>
+        <div style="display:grid;gap:10px;">
+
+          <div style="padding:14px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);border-radius:2px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;">
+              <span style="font-size:14px;">🚐 Van Decals</span>
+              <div style="display:flex;gap:6px;">
+                <input type="radio" name="gear_decals" id="vd_yes" value="worth_it" style="display:none"><label for="vd_yes" class="supply-btn">Worth it</label>
+                <input type="radio" name="gear_decals" id="vd_meh" value="neutral" style="display:none"><label for="vd_meh" class="supply-btn supply-mid">Neutral</label>
+                <input type="radio" name="gear_decals" id="vd_no" value="cut_costs" style="display:none"><label for="vd_no" class="supply-btn">Cut costs</label>
+              </div>
+            </div>
+            <textarea name="note_decals" class="inline-note gear-note" placeholder="Any comments on the van decals?" style="display:none;margin-top:10px;"></textarea>
+          </div>
+
+          <div style="padding:14px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);border-radius:2px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;">
+              <span style="font-size:14px;">💉 Temporary Tattoos</span>
+              <div style="display:flex;gap:6px;">
+                <input type="radio" name="gear_tattoos" id="tt_yes" value="worth_it" style="display:none"><label for="tt_yes" class="supply-btn">Worth it</label>
+                <input type="radio" name="gear_tattoos" id="tt_meh" value="neutral" style="display:none"><label for="tt_meh" class="supply-btn supply-mid">Neutral</label>
+                <input type="radio" name="gear_tattoos" id="tt_no" value="cut_costs" style="display:none"><label for="tt_no" class="supply-btn">Cut costs</label>
+              </div>
+            </div>
+            <textarea name="note_tattoos" class="inline-note gear-note" placeholder="Any comments on the tattoos?" style="display:none;margin-top:10px;"></textarea>
+          </div>
+
+          <div style="padding:14px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);border-radius:2px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;">
+              <span style="font-size:14px;">✂️ Tanner Gardner Cutouts</span>
+              <div style="display:flex;gap:6px;">
+                <input type="radio" name="gear_cutouts" id="tg_yes" value="worth_it" style="display:none"><label for="tg_yes" class="supply-btn">Worth it</label>
+                <input type="radio" name="gear_cutouts" id="tg_meh" value="neutral" style="display:none"><label for="tg_meh" class="supply-btn supply-mid">Neutral</label>
+                <input type="radio" name="gear_cutouts" id="tg_no" value="cut_costs" style="display:none"><label for="tg_no" class="supply-btn">Cut costs</label>
+              </div>
+            </div>
+            <textarea name="note_cutouts" class="inline-note gear-note" placeholder="Any comments on the cutouts?" style="display:none;margin-top:10px;"></textarea>
+          </div>
+
+        </div>
+      </div>
+
+      <div class="form-row">
+        <label>Any other gear or swag ideas for 2027 — or items you'd permanently cut?</label>
+        <textarea name="gear_other" placeholder="e.g. "Team singlet would be awesome", "Cut the tattoos", "Add a buff/gaiter"…"></textarea>
+      </div>
+    </div>
+
+    <!-- 6. Gear Packing -->
+    <div class="section-label">06 — Gear Packing</div>
+    <div class="card">
+      <div class="card-title">What to pack</div>
+      <div class="card-desc">We maintain a recommended packing list and stock some items in the van. Help us make both better.</div>
+
+      <div class="form-row">
+        <label>Was there anything you brought that you wish had been on the recommended packing list (so others would know to bring it too)?</label>
+        <textarea name="packing_add_list" placeholder="e.g. "Body Glide — critical", "Headlamp with fresh batteries", "Extra socks × 3", "Flip flops for the van"…"></textarea>
+      </div>
+
+      <div class="form-row">
+        <label>Was there anything you wish the van had stocked for everyone's use?</label>
+        <textarea name="packing_add_van" placeholder="e.g. "Foam roller", "KT tape", "Sunscreen", "Portable battery pack", "Extra safety vests", "First aid kit"…"></textarea>
+      </div>
+
+      <div class="form-row">
+        <label>Anything you packed that turned out to be useless dead weight?</label>
+        <textarea name="packing_cut" placeholder="e.g. "Brought a whole change of clothes I never touched", "Lugged a cooler — didn't need it"…"></textarea>
+      </div>
+    </div>
+
+    <!-- 7. Overnight / Sleep -->
+    <div class="section-label">07 — Overnight &amp; Sleep</div>
+    <div class="card">
+      <div class="card-title">The long night</div>
+      <div class="card-desc">TIR is a ~24 hour race. How were the overnight sleeping conditions and what would have helped?</div>
+
+      <div class="form-row">
+        <label>How would you rate the plan for overnight sleeping? (Given the race format, a 60–90 minute nap is a win — this is about making the best of the situation.)</label>
+        <div class="scale-group">
+          <input type="radio" name="sleep_rating" id="slp1" value="1"><label for="slp1">1</label>
+          <input type="radio" name="sleep_rating" id="slp2" value="2"><label for="slp2">2</label>
+          <input type="radio" name="sleep_rating" id="slp3" value="3"><label for="slp3">3</label>
+          <input type="radio" name="sleep_rating" id="slp4" value="4"><label for="slp4">4</label>
+          <input type="radio" name="sleep_rating" id="slp5" value="5"><label for="slp5">5</label>
+          <input type="radio" name="sleep_rating" id="slp6" value="6"><label for="slp6">6</label>
+          <input type="radio" name="sleep_rating" id="slp7" value="7"><label for="slp7">7</label>
+          <input type="radio" name="sleep_rating" id="slp8" value="8"><label for="slp8">8</label>
+          <input type="radio" name="sleep_rating" id="slp9" value="9"><label for="slp9">9</label>
+          <input type="radio" name="sleep_rating" id="slp10" value="10"><label for="slp10">10</label>
+        </div>
+        <div class="scale-labels"><span>Barely slept</span><span>Actually rested</span></div>
+      </div>
+
+      <div class="form-row">
+        <label>Where did you end up sleeping? (Select all that apply)</label>
+        <div class="check-group">
+          <label class="check-item"><input type="checkbox" name="sleep_location" value="van"><span class="check-box"></span><span>In the van (seat or floor)</span></label>
+          <label class="check-item"><input type="checkbox" name="sleep_location" value="friend_house"><span class="check-box"></span><span>Friend / Relative's house</span></label>
+          <label class="check-item"><input type="checkbox" name="sleep_location" value="exchange_24"><span class="check-box"></span><span>Exchange Point 24</span></label>
+          <label class="check-item"><input type="checkbox" name="sleep_location" value="exchange_30"><span class="check-box"></span><span>Exchange Point 30</span></label>
+          <label class="check-item"><input type="checkbox" name="sleep_location" value="outside"><span class="check-box"></span><span>Outside / grass</span></label>
+          <label class="check-item"><input type="checkbox" name="sleep_location" value="didnt_sleep"><span class="check-box"></span><span>Didn't really sleep</span></label>
+          <label class="check-item" id="sleep_other_row"><input type="checkbox" name="sleep_location" value="other_sleep" id="sleep_other_cb"><span class="check-box"></span><span>Other</span></label>
+          <textarea name="sleep_other_note" class="inline-note" placeholder="Where did you sleep?" style="display:none;margin-left:28px;margin-top:4px;"></textarea>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <label>What gear or logistics would have most improved your sleep?</label>
+        <textarea name="sleep_improve" placeholder="e.g. &ldquo;Ear plugs in the van kit&rdquo;, &ldquo;Eye mask&rdquo;, &ldquo;Better defined rest window in the rotation&rdquo;, &ldquo;Blanket or sleeping pad in the van&rdquo;&hellip;"></textarea>
+      </div>
+    </div>
+
+    <!-- 8. Legs & Assignment -->
+    <div class="section-label">08 — Your Legs</div>
+    <div class="card">
+      <div class="card-title">On the course</div>
+      <div class="card-desc">Tell us about your individual leg assignments and how they felt.</div>
+
+      <div class="form-row">
+        <label>Were your leg assignments (distance + difficulty) a good fit for you?</label>
+        <select name="leg_fit">
+          <option value="" disabled selected>Select</option>
+          <option>Yes — perfect fit</option>
+          <option>Yes — mostly good</option>
+          <option>Neutral</option>
+          <option>No — too easy / too short</option>
+          <option>No — too hard / too long</option>
+        </select>
+      </div>
+
+      <div class="form-row">
+        <label>How did you feel physically across all your legs? (1 = Struggled, 10 = Peak condition)</label>
+        <div class="scale-group">
+          <input type="radio" name="physical_feel" id="pf1" value="1"><label for="pf1">1</label>
+          <input type="radio" name="physical_feel" id="pf2" value="2"><label for="pf2">2</label>
+          <input type="radio" name="physical_feel" id="pf3" value="3"><label for="pf3">3</label>
+          <input type="radio" name="physical_feel" id="pf4" value="4"><label for="pf4">4</label>
+          <input type="radio" name="physical_feel" id="pf5" value="5"><label for="pf5">5</label>
+          <input type="radio" name="physical_feel" id="pf6" value="6"><label for="pf6">6</label>
+          <input type="radio" name="physical_feel" id="pf7" value="7"><label for="pf7">7</label>
+          <input type="radio" name="physical_feel" id="pf8" value="8"><label for="pf8">8</label>
+          <input type="radio" name="physical_feel" id="pf9" value="9"><label for="pf9">9</label>
+          <input type="radio" name="physical_feel" id="pf10" value="10"><label for="pf10">10</label>
+        </div>
+        <div class="scale-labels"><span>Struggled</span><span>Peak condition</span></div>
+      </div>
+
+      <div class="form-row">
+        <label>Averaged across your 3 legs, how did your pace compare to your target?</label>
+        <select name="pace_hit">
+          <option value="" disabled selected>Select</option>
+          <option>Faster than target</option>
+          <option>About on target</option>
+          <option>Slower than target</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- 9. Dashboard -->
+    <div class="section-label">09 — thenightherons.run</div>
+    <div class="card">
+      <div class="card-title">The dashboard</div>
+      <div class="card-desc">thenightherons.run was new this year — a central hub for live results, leg data, and team info during the race.</div>
+
+      <div class="form-row">
+        <label>Did you use thenightherons.run during TIR?</label>
+        <select name="dashboard_used" id="dashboardUsed">
+          <option value="" disabled selected>Select</option>
+          <option value="yes_entered_data">Yes — I entered my leg data into it</option>
+          <option value="yes_checked_results">Yes — I checked results / standings</option>
+          <option value="yes_both">Yes — both entered data and checked results</option>
+          <option value="checked_only">Looked at it but didn't interact</option>
+          <option value="no_forgot">No — forgot about it / didn't get to it</option>
+          <option value="no_not_aware">Wasn't aware of it</option>
+        </select>
+      </div>
+
+      <div id="dashboardFeedback">
+        <div class="form-row">
+          <label>Overall, was it a good addition to TIR?</label>
+          <div class="scale-group">
+            <input type="radio" name="dashboard_rating" id="dr1" value="1"><label for="dr1">1</label>
+            <input type="radio" name="dashboard_rating" id="dr2" value="2"><label for="dr2">2</label>
+            <input type="radio" name="dashboard_rating" id="dr3" value="3"><label for="dr3">3</label>
+            <input type="radio" name="dashboard_rating" id="dr4" value="4"><label for="dr4">4</label>
+            <input type="radio" name="dashboard_rating" id="dr5" value="5"><label for="dr5">5</label>
+            <input type="radio" name="dashboard_rating" id="dr6" value="6"><label for="dr6">6</label>
+            <input type="radio" name="dashboard_rating" id="dr7" value="7"><label for="dr7">7</label>
+            <input type="radio" name="dashboard_rating" id="dr8" value="8"><label for="dr8">8</label>
+            <input type="radio" name="dashboard_rating" id="dr9" value="9"><label for="dr9">9</label>
+            <input type="radio" name="dashboard_rating" id="dr10" value="10"><label for="dr10">10</label>
+          </div>
+          <div class="scale-labels"><span>Meh — skip it</span><span>Can't race without it</span></div>
+        </div>
+
+        <div class="form-row">
+          <label>What features did you find most useful?</label>
+          <div class="check-group">
+            <label class="check-item"><input type="checkbox" name="dashboard_feature" value="live_results"><span class="check-box"></span><span>Live leg results / times</span></label>
+            <label class="check-item"><input type="checkbox" name="dashboard_feature" value="standings"><span class="check-box"></span><span>Team standings / leaderboard</span></label>
+            <label class="check-item"><input type="checkbox" name="dashboard_feature" value="leg_info"><span class="check-box"></span><span>Leg info (distance, difficulty, elevation)</span></label>
+            <label class="check-item"><input type="checkbox" name="dashboard_feature" value="runner_schedule"><span class="check-box"></span><span>Runner schedule / rotation lookup</span></label>
+            <label class="check-item"><input type="checkbox" name="dashboard_feature" value="maps"><span class="check-box"></span><span>Maps / navigation aids</span></label>
+            <label class="check-item"><input type="checkbox" name="dashboard_feature" value="none_used"><span class="check-box"></span><span>Didn't use any features specifically</span></label>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <label>What specific improvements or new features would make it more useful?</label>
+          <textarea name="dashboard_improve" placeholder="e.g. "Push notifications when my leg is coming up", "Dark mode", "Better mobile layout", "Show projected finish time", "Pace calculator per runner"…"></textarea>
+        </div>
+
+        <div class="form-row">
+          <label>Were there any bugs or things that just didn't work?</label>
+          <textarea name="dashboard_bugs" placeholder="e.g. "Results weren't updating in real time", "Crashed on Safari", "Couldn't find my team's schedule"…"></textarea>
+        </div>
+
+        <div class="form-row">
+          <label>Did your friends or family use thenightherons.run to follow along?</label>
+          <select name="dashboard_family">
+            <option value="" disabled selected>Select</option>
+            <option value="yes_actively">Yes — they followed it actively</option>
+            <option value="yes_occasionally">Yes — they checked it a few times</option>
+            <option value="no_didnt_know">No — they didn't know about it</option>
+            <option value="no_not_interested">No — they weren't interested</option>
+            <option value="na">N/A — no one was following along</option>
+          </select>
+        </div>
+
+        <div class="form-row">
+          <label>What is your single most important recommendation to improve thenightherons.run?</label>
+          <textarea name="dashboard_top_rec" placeholder="Your #1 suggestion for next year…"></textarea>
+        </div>
+
+        <div class="form-row">
+          <label>Any recommendations for the app&rsquo;s UI, dashboards, or data displays?</label>
+          <textarea name="dashboard_ui" placeholder="e.g. &ldquo;The leaderboard was hard to read on mobile&rdquo;, &ldquo;Add a van-level summary view&rdquo;, &ldquo;Show splits by leg difficulty&rdquo;, &ldquo;Pace trend chart per runner&rdquo;&hellip;"></textarea>
+        </div>
+      </div>
+    </div>
+
+    <!-- 10. Team & Culture (was 09) -->
+    <div class="section-label">10 — Team &amp; Culture</div>
+    <div class="card">
+      <div class="card-title">The crew</div>
+      <div class="card-desc">What made the people-side of TIR great — or what could be better?</div>
+
+      <div class="form-row">
+        <label>How well did the team assignment process feel (who was on your team)?</label>
+        <select name="team_assignment">
+          <option value="" disabled selected>Select</option>
+          <option>Great — well balanced, good fit</option>
+          <option>Good — minor quibbles</option>
+          <option>Neutral</option>
+          <option>Could be improved</option>
+          <option>Significant mismatch</option>
+        </select>
+      </div>
+
+      <div class="form-row">
+        <label>What team traditions or moments stood out as highlights?</label>
+        <textarea name="highlights" placeholder="e.g. The midnight exchange, team dinner, a specific cheer, a van inside joke…"></textarea>
+      </div>
+
+      <div class="form-row">
+        <label>Is there anything about the team culture you'd like to change or improve?</label>
+        <textarea name="culture_improve" placeholder="Be honest — this helps us get better"></textarea>
+      </div>
+
+    </div>
+
+    <!-- 11. Team Format -->
+    <div class="section-label">11 — Team Format</div>
+    <div class="card">
+      <div class="card-title">How should we build teams?</div>
+      <div class="card-desc">Currently one person orchestrates balanced teams using pace data. We want to know if you'd prefer a different format for 2027.</div>
+
+      <div class="form-row">
+        <label>Which team formation format do you prefer?</label>
+        <div style="display:grid;gap:10px;margin-top:4px;">
+          <label class="check-item" style="align-items:flex-start;gap:12px;">
+            <input type="radio" name="team_format" value="orchestrated_balanced" id="tf1" style="display:none">
+            <span class="check-box radio-box" id="tf1box" style="margin-top:2px;border-radius:50%;"></span>
+            <span style="font-size:14px;line-height:1.5;"><strong style="color:var(--white);">Keep it — Orchestrated balanced teams</strong><br><span style="color:var(--muted);font-size:13px;">One person (coach/organizer) builds teams using pace data, constraints, and preferences to make them as even as possible.</span></span>
+          </label>
+          <label class="check-item" style="align-items:flex-start;gap:12px;">
+            <input type="radio" name="team_format" value="draft" id="tf2" style="display:none">
+            <span class="check-box radio-box" id="tf2box" style="margin-top:2px;border-radius:50%;"></span>
+            <span style="font-size:14px;line-height:1.5;"><strong style="color:var(--white);">Draft</strong><br><span style="color:var(--muted);font-size:13px;">Captains take turns selecting runners, fantasy-draft style.</span></span>
+          </label>
+          <label class="check-item" style="align-items:flex-start;gap:12px;">
+            <input type="radio" name="team_format" value="tiered" id="tf3" style="display:none">
+            <span class="check-box radio-box" id="tf3box" style="margin-top:2px;border-radius:50%;"></span>
+            <span style="font-size:14px;line-height:1.5;"><strong style="color:var(--white);">Tiered / A-B-C-D teams</strong><br><span style="color:var(--muted);font-size:13px;">Teams explicitly ranked by ability — elites on Team A, next tier on Team B, etc. Compete within tiers.</span></span>
+          </label>
+          <label class="check-item" style="align-items:flex-start;gap:12px;">
+            <input type="radio" name="team_format" value="other_format" id="tf5" style="display:none">
+            <span class="check-box radio-box" id="tf5box" style="margin-top:2px;border-radius:50%;"></span>
+            <span style="font-size:14px;line-height:1.5;"><strong style="color:var(--white);">Something else</strong><br><span style="color:var(--muted);font-size:13px;">Describe below.</span></span>
+          </label>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <label>Any elaboration on your team format preference?</label>
+        <textarea name="team_format_notes" placeholder="e.g. "Love the current system but add a captain vote", "Draft but seeded by pace", "Keep balanced but let us see the methodology"…"></textarea>
+      </div>
+    </div>
+
+    <!-- 12. Overall -->
+    <div class="section-label">12 — Overall Experience</div>
+    <div class="card">
+      <div class="card-title">How'd it go?</div>
+      <div class="card-desc">Big picture impressions of TIR 2026.</div>
+
+      <div class="form-row">
+        <label>Overall race experience</label>
+        <div class="stars">
+          <input type="radio" name="overall_rating" id="s5" value="5"><label for="s5">★</label>
+          <input type="radio" name="overall_rating" id="s4" value="4"><label for="s4">★</label>
+          <input type="radio" name="overall_rating" id="s3" value="3"><label for="s3">★</label>
+          <input type="radio" name="overall_rating" id="s2" value="2"><label for="s2">★</label>
+          <input type="radio" name="overall_rating" id="s1" value="1"><label for="s1">★</label>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <label>How well did your team perform relative to expectations?</label>
+        <select name="team_performance">
+          <option value="" disabled selected>Select</option>
+          <option>Significantly exceeded expectations</option>
+          <option>Slightly exceeded expectations</option>
+          <option>Met expectations</option>
+          <option>Slightly below expectations</option>
+          <option>Significantly below expectations</option>
+        </select>
+      </div>
+
+      <div class="form-row">
+        <label>How would you describe the team chemistry on your van?</label>
+        <div class="scale-group">
+          <input type="radio" name="van_chemistry" id="vc1" value="1"><label for="vc1">1</label>
+          <input type="radio" name="van_chemistry" id="vc2" value="2"><label for="vc2">2</label>
+          <input type="radio" name="van_chemistry" id="vc3" value="3"><label for="vc3">3</label>
+          <input type="radio" name="van_chemistry" id="vc4" value="4"><label for="vc4">4</label>
+          <input type="radio" name="van_chemistry" id="vc5" value="5"><label for="vc5">5</label>
+          <input type="radio" name="van_chemistry" id="vc6" value="6"><label for="vc6">6</label>
+          <input type="radio" name="van_chemistry" id="vc7" value="7"><label for="vc7">7</label>
+          <input type="radio" name="van_chemistry" id="vc8" value="8"><label for="vc8">8</label>
+          <input type="radio" name="van_chemistry" id="vc9" value="9"><label for="vc9">9</label>
+          <input type="radio" name="van_chemistry" id="vc10" value="10"><label for="vc10">10</label>
+        </div>
+        <div class="scale-labels"><span>Rough</span><span>Best van ever</span></div>
+      </div>
+
+      <div class="form-row">
+        <label>One word that describes your TIR 2026</label>
+        <input type="text" name="one_word" placeholder="e.g. Brutal, Electric, Unforgettable…">
+      </div>
+
+      <div class="form-row">
+        <label>Would you return for TIR 2027?</label>
+        <div class="scale-group">
+          <input type="radio" name="return" id="r1" value="1"><label for="r1">1</label>
+          <input type="radio" name="return" id="r2" value="2"><label for="r2">2</label>
+          <input type="radio" name="return" id="r3" value="3"><label for="r3">3</label>
+          <input type="radio" name="return" id="r4" value="4"><label for="r4">4</label>
+          <input type="radio" name="return" id="r5" value="5"><label for="r5">5</label>
+          <input type="radio" name="return" id="r6" value="6"><label for="r6">6</label>
+          <input type="radio" name="return" id="r7" value="7"><label for="r7">7</label>
+          <input type="radio" name="return" id="r8" value="8"><label for="r8">8</label>
+          <input type="radio" name="return" id="r9" value="9"><label for="r9">9</label>
+          <input type="radio" name="return" id="r10" value="10"><label for="r10">10</label>
+        </div>
+        <div class="scale-labels"><span>Probably not</span><span>100% in</span></div>
+      </div>
+    </div>
+
+    <!-- 13. Post-Race / TRAGRI -->
+    <div class="section-label">13 — Post-Race &amp; TRAGRI</div>
+    <div class="card">
+      <div class="card-title">After the finish line</div>
+      <div class="card-desc">How was the wind-down, transport home, and the overall post-race experience?</div>
+
+      <div class="form-row">
+        <label>How would you rate the post-race experience?</label>
+        <div class="scale-group">
+          <input type="radio" name="post_race_logistics" id="porl1" value="1"><label for="porl1">1</label>
+          <input type="radio" name="post_race_logistics" id="porl2" value="2"><label for="porl2">2</label>
+          <input type="radio" name="post_race_logistics" id="porl3" value="3"><label for="porl3">3</label>
+          <input type="radio" name="post_race_logistics" id="porl4" value="4"><label for="porl4">4</label>
+          <input type="radio" name="post_race_logistics" id="porl5" value="5"><label for="porl5">5</label>
+          <input type="radio" name="post_race_logistics" id="porl6" value="6"><label for="porl6">6</label>
+          <input type="radio" name="post_race_logistics" id="porl7" value="7"><label for="porl7">7</label>
+          <input type="radio" name="post_race_logistics" id="porl8" value="8"><label for="porl8">8</label>
+          <input type="radio" name="post_race_logistics" id="porl9" value="9"><label for="porl9">9</label>
+          <input type="radio" name="post_race_logistics" id="porl10" value="10"><label for="porl10">10</label>
+        </div>
+        <div class="scale-labels"><span>Anticlimactic</span><span>Perfect sendoff</span></div>
+      </div>
+
+      <div class="form-row">
+        <label>Any specific recommendations for post-race — celebration, debrief, transport, etc.?</label>
+        <textarea name="post_race_improve" placeholder="e.g. &ldquo;Group dinner at the finish&rdquo;, &ldquo;Faster van return logistics&rdquo;&hellip;"></textarea>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">TRAGRI Awards</div>
+      <div class="card-desc">The TRAGRI awards are in their 2nd year. Help us make year 3 the best one yet.</div>
+
+      <div class="form-row">
+        <label>How would you rate the TRAGRI awards ceremony overall?</label>
+        <div class="scale-group">
+          <input type="radio" name="tragri_rating" id="tr1" value="1"><label for="tr1">1</label>
+          <input type="radio" name="tragri_rating" id="tr2" value="2"><label for="tr2">2</label>
+          <input type="radio" name="tragri_rating" id="tr3" value="3"><label for="tr3">3</label>
+          <input type="radio" name="tragri_rating" id="tr4" value="4"><label for="tr4">4</label>
+          <input type="radio" name="tragri_rating" id="tr5" value="5"><label for="tr5">5</label>
+          <input type="radio" name="tragri_rating" id="tr6" value="6"><label for="tr6">6</label>
+          <input type="radio" name="tragri_rating" id="tr7" value="7"><label for="tr7">7</label>
+          <input type="radio" name="tragri_rating" id="tr8" value="8"><label for="tr8">8</label>
+          <input type="radio" name="tragri_rating" id="tr9" value="9"><label for="tr9">9</label>
+          <input type="radio" name="tragri_rating" id="tr10" value="10"><label for="tr10">10</label>
+        </div>
+        <div class="scale-labels"><span>Skip it</span><span>Best part of TIR</span></div>
+      </div>
+
+      <div class="form-row">
+        <label>What worked well about the awards ceremony?</label>
+        <textarea name="tragri_good" placeholder="e.g. &ldquo;The categories felt personal&rdquo;, &ldquo;The format was fun&rdquo;, &ldquo;Good crowd energy&rdquo;&hellip;"></textarea>
+      </div>
+
+      <div class="form-row">
+        <label>What would you change or improve for year 3?</label>
+        <textarea name="tragri_improve" placeholder="e.g. &ldquo;More categories&rdquo;, &ldquo;Fewer categories &mdash; too long&rdquo;, &ldquo;Better venue&rdquo;, &ldquo;Add video highlights&rdquo;&hellip;"></textarea>
+      </div>
+
+      <div class="form-row">
+        <label>Any award categories we should add, retire, or rename?</label>
+        <textarea name="tragri_categories" placeholder="e.g. &ldquo;Add a &lsquo;Midnight Warrior&rsquo; award&rdquo;, &ldquo;The X category felt forced &mdash; cut it&rdquo;&hellip;"></textarea>
+      </div>
+    </div>
+
+    <!-- 14. Get Involved -->
+    <div class="section-label">14 — Get Involved</div>
+    <div class="card">
+      <div class="card-title">Own a piece of it</div>
+      <div class="card-desc">Is there any part of TIR prep or race day that gives you energy and you'd want to own or help with in 2027? Check everything that interests you.</div>
+
+      <div class="form-row">
+        <textarea name="volunteer_notes" placeholder="e.g. "I want to handle food &amp; supplies", "I can be van captain for Van 2", "I'd love to own the post-race celebration"…" style="min-height:100px;"></textarea>
+      </div>
+    </div>
+
+    <!-- 15. Open Feedback -->
+    <div class="section-label">15 — Final Thoughts</div>
+    <div class="card">
+      <div class="card-title">The floor is yours</div>
+      <div class="card-desc">Anything else — suggestions, shoutouts, grievances, or ideas for 2027.</div>
+
+      <div class="form-row">
+        <label>What's the #1 thing we should keep exactly the same for 2027?</label>
+        <textarea name="keep_same" placeholder="What absolutely cannot change…"></textarea>
+      </div>
+
+      <div class="form-row">
+        <label>What's the #1 thing we should change or improve for 2027?</label>
+        <textarea name="change" placeholder="Your most important suggestion…"></textarea>
+      </div>
+
+      <div class="form-row">
+        <label>Shoutouts — anyone deserve special recognition?</label>
+        <textarea name="shoutouts" placeholder="MVPs, unsung heroes, standout performances…"></textarea>
+      </div>
+
+      <div class="form-row">
+        <label>Anything else on your mind?</label>
+        <textarea name="other" placeholder="Open field — say whatever you want"></textarea>
+      </div>
+    </div>
+
+    <div class="submit-area">
+      <button type="submit" class="submit-btn">Submit Feedback</button>
+      <div class="submit-note">Anonymous responses are fine — your name is optional context, not a requirement.</div>
+    </div>
+
+  </form>
+
+  <!-- Success Screen -->
+  <div class="success-screen" id="successScreen">
+    <div class="success-icon">🏁</div>
+    <h2>You're Done.</h2>
+    <p>Thanks for taking the time. Every response helps us make TIR 2027 better than 2026. See you on the road.</p>
+    <div class="divider" style="margin-top:28px"></div>
+  </div>
+</div>
+
+<script>
+  // Progress bar
+  window.addEventListener('scroll', () => {
+    const doc = document.documentElement;
+    const scrolled = (doc.scrollTop / (doc.scrollHeight - doc.clientHeight)) * 100;
+    document.getElementById('progressBar').style.width = scrolled + '%';
+  });
+
+  // Checkbox mutual exclusivity for "none"
+  document.querySelectorAll('input[name="breakdown"]').forEach(cb => {
+    cb.addEventListener('change', function() {
+      if (this.value === 'none' && this.checked) {
+        document.querySelectorAll('input[name="breakdown"]').forEach(other => {
+          if (other.value !== 'none') other.checked = false;
+        });
+      } else if (this.value !== 'none' && this.checked) {
+        const noneBox = document.querySelector('input[name="breakdown"][value="none"]');
+        if (noneBox) noneBox.checked = false;
+      }
+    });
+  });
+
+
+  // Training plan — show value/notes fields only if they used it
+  document.getElementById('trainingPlanUsed').addEventListener('change', function() {
+    const used = ['yes_full','yes_partial'].includes(this.value);
+    document.getElementById('trainingPlanFeedback').style.display = used ? 'block' : 'none';
+    document.getElementById('trainingPlanNotes').style.display = used ? 'block' : 'none';
+  });
+  // Sleep "other" checkbox
+  const sleepOtherCb = document.getElementById('sleep_other_cb');
+  if (sleepOtherCb) {
+    sleepOtherCb.addEventListener('change', function() {
+      const note = document.querySelector('textarea[name="sleep_other_note"]');
+      if (note) note.style.display = this.checked ? 'block' : 'none';
+    });
+  }
+
+  // Conditional note fields on breakdown checkboxes
+  document.querySelectorAll('.breakdown-cb').forEach(cb => {
+    cb.addEventListener('change', function() {
+      const noteField = document.querySelector(`textarea[name="${this.dataset.note}"]`);
+      if (noteField) noteField.style.display = this.checked ? 'block' : 'none';
+    });
+  });
+
+  // Gear note fields — show on any non-neutral selection
+  ['gear_running_hat','gear_casual_hat','gear_decals','gear_tattoos','gear_cutouts'].forEach(name => {
+    document.querySelectorAll(`input[name="${name}"]`).forEach(radio => {
+      radio.addEventListener('change', function() {
+        const parent = this.closest('[style*="padding:14px"]');
+        if (parent) {
+          const note = parent.querySelector('.gear-note');
+          if (note) note.style.display = 'block';
+        }
+      });
+    });
+  });
+
+  // Dashboard: show/hide detailed feedback based on usage answer
+  document.getElementById('dashboardUsed').addEventListener('change', function() {
+    const show = !['no_forgot','no_no_access','no_not_aware'].includes(this.value);
+    document.getElementById('dashboardFeedback').style.display = show ? 'block' : 'none';
+  });
+  // Initialize hidden
+  document.getElementById('dashboardFeedback').style.display = 'none';
+
+  // Volunteer "nothing" mutual exclusivity
+  document.querySelectorAll('input[name="volunteer"]').forEach(cb => {
+    cb.addEventListener('change', function() {
+      if (this.value === 'nothing' && this.checked) {
+        document.querySelectorAll('input[name="volunteer"]').forEach(other => {
+          if (other.value !== 'nothing') other.checked = false;
+        });
+      } else if (this.value !== 'nothing' && this.checked) {
+        const noneBox = document.querySelector('input[name="volunteer"][value="nothing"]');
+        if (noneBox) noneBox.checked = false;
+      }
+    });
+  });
+
+  // Team format radio styling
+  document.querySelectorAll('input[name="team_format"]').forEach(radio => {
+    radio.addEventListener('change', function() {
+      document.querySelectorAll('.radio-box').forEach(box => {
+        box.style.background = '';
+        box.style.borderColor = '';
+      });
+      const box = this.nextElementSibling;
+      if (box && box.classList.contains('radio-box')) {
+        box.style.background = 'var(--red)';
+        box.style.borderColor = 'var(--red)';
+      }
+    });
+  });
+  document.getElementById('feedbackForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+
+    const name = document.querySelector('select[name="runner_name"]').value;
+    if (!name) {
+      alert('Please select your name before submitting.');
+      return;
+    }
+
+    // Collect data
+    const data = new FormData(this);
+    const result = {};
+    for (const [key, value] of data.entries()) {
+      if (result[key]) {
+        result[key] = Array.isArray(result[key]) ? [...result[key], value] : [result[key], value];
+      } else {
+        result[key] = value;
+      }
+    }
+
+    // Submit to API
+    const submitBtn = document.querySelector('.submit-btn');
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Submitting...';
+
+    try {
+      const res = await fetch('/api/feedback', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(result),
+      });
+
+      if (!res.ok) throw new Error('Server error');
+
+      // Show success
+      document.getElementById('feedbackForm').style.display = 'none';
+      const success = document.getElementById('successScreen');
+      success.style.display = 'block';
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    } catch (err) {
+      console.error('Submit failed:', err);
+      alert('Something went wrong submitting your feedback. Please try again.');
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'Submit Feedback';
+    }
+  });
+</script>
+</body>
+</html>
