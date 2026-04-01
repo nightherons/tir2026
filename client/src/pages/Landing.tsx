@@ -107,8 +107,8 @@ export default function Landing() {
           {raceDateLabel}
         </p>
 
-        {/* Countdown Timer - hidden when race is finished or still loading */}
-        {!isLoading && !isFinished && <CountdownTimer raceDate={raceDate} />}
+        {/* Countdown Timer - hidden while loading */}
+        {!isLoading && <CountdownTimer raceDate={raceDate} />}
 
         {/* Action Buttons */}
         <div className="mt-12 flex flex-col sm:flex-row items-center gap-4">
