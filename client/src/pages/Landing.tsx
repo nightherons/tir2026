@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { LogIn, Radio } from 'lucide-react'
+import { useQuery } from '@tanstack/react-query'
+import { LogIn, Radio, BarChart3 } from 'lucide-react'
+import { dashboardApi } from '../services/api'
 import LoginModal from '../components/LoginModal'
 
 // Race date: March 28, 2026
@@ -64,6 +66,14 @@ export default function Landing() {
   const [showLoginModal, setShowLoginModal] = useState(false)
   const navigate = useNavigate()
 
+  const { data } = useQuery({
+    queryKey: ['dashboard'],
+    queryFn: () => dashboardApi.getAll(),
+    staleTime: 60 * 1000,
+  })
+  const raceStatus = data?.data?.data?.raceStatus || 'pre-race'
+  const isFinished = raceStatus === 'finished'
+
   return (
     <div className="relative min-h-screen overflow-hidden bg-black">
       {/* YouTube Video Background */}
@@ -105,11 +115,11 @@ export default function Landing() {
         {/* Action Buttons */}
         <div className="mt-12 flex flex-col sm:flex-row items-center gap-4">
           <button
-            onClick={() => navigate('/dashboard')}
+            onClick={() => navigate(isFinished ? '/wrapup' : '/dashboard')}
             className="w-48 flex items-center justify-center gap-2 bg-white/20 hover:bg-white/30 backdrop-blur-sm text-white py-3 rounded-lg border border-white/30 transition-all hover:scale-105"
           >
-            <Radio className="w-5 h-5" />
-            <span className="font-medium">Live Dashboard</span>
+            {isFinished ? <BarChart3 className="w-5 h-5" /> : <Radio className="w-5 h-5" />}
+            <span className="font-medium">{isFinished ? 'Race Wrap-Up' : 'Live Dashboard'}</span>
           </button>
           <button
             onClick={() => setShowLoginModal(true)}
