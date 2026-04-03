@@ -101,9 +101,10 @@ router.get('/export', authMiddleware, adminOnly, async (req, res) => {
 
     const csv = [header, ...rows].join('\n')
 
-    res.setHeader('Content-Type', 'text/csv')
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8')
     res.setHeader('Content-Disposition', 'attachment; filename=tir_2026_feedback.csv')
-    res.send(csv)
+    // UTF-8 BOM so Excel interprets the file correctly
+    res.send('\uFEFF' + csv)
   } catch (error) {
     console.error('Feedback export error:', error)
     res.status(500).json({ success: false, error: 'Failed to export feedback' })
