@@ -11,8 +11,9 @@ import {
   Users,
   Route,
   Timer,
+  MessageSquare,
 } from 'lucide-react'
-import { adminApi } from '../../services/api'
+import { adminApi, api } from '../../services/api'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../ui/card'
 import { Button } from '../ui/button'
 import { Badge } from '../ui/badge'
@@ -192,6 +193,40 @@ export default function ImportExport() {
         success: false,
         message,
       })
+    }
+  }
+
+  const handleExportFeedback = async () => {
+    try {
+      const response = await api.get('/feedback/export', { responseType: 'blob' })
+      const blob = response.data as Blob
+      const url = window.URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `tir_2026_feedback.csv`
+      document.body.appendChild(a)
+      a.click()
+      window.URL.revokeObjectURL(url)
+      document.body.removeChild(a)
+    } catch (error: unknown) {
+      const axiosError = error as { response?: { data?: Blob | { error?: string }, status?: number }, message?: string }
+      let message = 'Failed to export feedback.'
+
+      if (axiosError.response?.status === 404) {
+        message = 'No feedback submissions to export yet.'
+      } else if (axiosError.response?.data instanceof Blob) {
+        try {
+          const text = await axiosError.response.data.text()
+          const json = JSON.parse(text)
+          message = json.error || message
+        } catch {
+          // Couldn't parse blob as JSON, use default message
+        }
+      } else if (axiosError.message) {
+        message = axiosError.message
+      }
+
+      setImportResult({ success: false, message })
     }
   }
 
@@ -392,6 +427,25 @@ export default function ImportExport() {
               Download {exportFormat.toUpperCase()}
             </Button>
           </div>
+        </CardContent>
+      </Card>
+
+      {/* Export Feedback section */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <MessageSquare className="h-5 w-5" />
+            Export Feedback
+          </CardTitle>
+          <CardDescription>
+            Download all runner feedback form submissions as a CSV file
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Button onClick={handleExportFeedback}>
+            <Download className="mr-2 h-4 w-4" />
+            Download Feedback CSV
+          </Button>
         </CardContent>
       </Card>
 
